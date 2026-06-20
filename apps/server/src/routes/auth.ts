@@ -30,16 +30,6 @@ authRouter.post("/login", zValidator("json", LoginSchema), async (c) => {
   return c.json({ token, user: { username } });
 });
 
-authRouter.get("/debug", (c) => {
-  const hashB64 = process.env.AUTH_PASSWORD_HASH ?? "";
-  const hash = hashB64 ? Buffer.from(hashB64, "base64").toString("utf-8") : "";
-  return c.json({
-    username: process.env.AUTH_USERNAME ?? "NOT_SET",
-    hashB64Len: hashB64.length,
-    hashDecodedLen: hash.length,
-  });
-});
-
 authRouter.get("/me", authMiddleware, (c) => {
   const payload = getAuthPayload(c);
   return c.json({ user: payload });

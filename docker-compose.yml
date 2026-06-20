@@ -8,7 +8,7 @@ services:
     environment:
       - JWT_SECRET=change-me-in-production
       - AUTH_USERNAME=admin
-      - AUTH_PASSWORD_HASH=$2a$10$jeTXh9CmeR3MrPtc6ICGgO5ExqWq8UGUqXvrY1QW4merJBhozotQa
+      - AUTH_PASSWORD_HASH=JDJhJDEwJGVBV2JvSWIzeVZleWFWQk45QldMeS5EaHA2ZkhJaTJmUEx0SllxOVBPcFRtbW8zQ3BReDhx
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
     volumes:

@@ -12,15 +12,15 @@ Before any work, read: `about.md`, `steps.md`, `AGENTS.md` (this file). These ar
 ## Commands
 - `bun run dev` - Start both client and server (from root)
 - `bun run build` - Build server (from apps/server)
-- `bun run typecheck` - Type check server (from apps/server)
 - `cd apps/client && bun run build` - Build client
 - `cd apps/client && bun run dev` - Dev server with hot reload
 
 ## Code Conventions
 - TypeScript strict mode, no `any` types
 - Tailwind CSS v4 only, no custom CSS files (except index.css with @theme)
-- No comments in production code (skip doc comments unless needed)
-- Absolute imports: `@/` alias for `client/src/` and `server/src/`
+- No comments in production code
+- Absolute imports: `@/` alias for `client/src/` only
+- Server uses relative imports (Bun build doesn't resolve tsconfig paths)
 - Functional components with hooks, no class components
 - Mobile-first responsive: 375px, 768px, 1280px breakpoints
 - No emojis in code, commits, or UI
@@ -28,9 +28,9 @@ Before any work, read: `about.md`, `steps.md`, `AGENTS.md` (this file). These ar
 ## Stack
 - **Backend:** Bun + Hono + Zod + @earendil-works/pi-coding-agent SDK
 - **Frontend:** React 19 + Vite + TypeScript + Tailwind CSS v4 + Framer Motion
-- **Auth:** JWT + bcrypt (credentials in env vars)
-- **Streaming:** WebSocket (Hono upgrade)
-- **Persistence:** localStorage (client), filesystem (server sessions)
+- **Auth:** JWT + bcrypt (credentials in env vars, base64-encoded for Docker safety)
+- **Streaming:** WebSocket (Hono/Bun upgrade)
+- **Persistence:** localStorage (client), filesystem (server sessions at /tmp/pi-web-users)
 - **Deployment:** Coolify (Docker)
 
 ## Design Tokens
@@ -47,25 +47,42 @@ Before any work, read: `about.md`, `steps.md`, `AGENTS.md` (this file). These ar
 
 ### Platform
 - **Service:** Coolify
-- **URL:** https://pi-web.pages.therry.dev (to be configured)
+- **URL:** https://pi-web.pages.therry.dev
 
 ### Resources
-- **Server UUID:** TBD after Coolify resource creation
-- **Project UUID:** TBD after Coolify resource creation
-
-### Build
+- **Server UUID:** usfaz8tzw85ctz03i4kl8okf
+- **Project UUID:** aitet5hutg1byuy5hcjbhuyp
+- **Application UUID:** nb0ee5mtnrx195nrw9aa3oor
+- **Repository:** https://github.com/themikehage/pi-web-wrapper (public)
 - **Build Pack:** dockerfile
 - **Port:** 3000
+- **Base URL for API:** https://pages.therry.dev/api/v1
 
 ### Auth
 - **Environment Variables (Coolify):**
-  - AUTH_USERNAME - Login username
-  - AUTH_PASSWORD_HASH - bcrypt hash of password
-  - JWT_SECRET - JWT signing secret
-  - ANTHROPIC_API_KEY - Anthropic API key (optional per-user)
+  - JWT_SECRET - JWT signing secret (base64 random)
+  - AUTH_USERNAME - Login username (e.g. "admin")
+  - AUTH_PASSWORD_HASH - Base64-encoded bcrypt hash of password. Generate with:
+    ```
+    bun -e "import bcrypt from 'bcryptjs'; const h = await bcrypt.hash('password', 10); console.log(Buffer.from(h).toString('base64'));"
+    ```
+  - ANTHROPIC_API_KEY - Anthropic API key (optional, for LLM access)
+- **Important:** AUTH_PASSWORD_HASH must be base64-encoded! Docker/Coolify env var handling expands `$` characters in bcrypt hashes. The server decodes from base64 at runtime.
+
+### Deployment Commands
+```bash
+# Redeploy
+curl -X POST "$COOLIFY_URL/api/v1/applications/nb0ee5mtnrx195nrw9aa3oor/start" \
+  -H "Authorization: Bearer $COOLIFY_API_KEY"
+
+# Check status
+curl -s "$COOLIFY_URL/api/v1/deployments?application_uuid=nb0ee5mtnrx195nrw9aa3oor&per_page=1" \
+  -H "Authorization: Bearer $COOLIFY_API_KEY"
+```
 
 ### Considerations
-- Websocket streaming requires no sticky sessions
-- User session data stored at /workspace/users/{username}
-- Volume mount /workspace/users for persistence across restarts
-- Bun runtime required (over bunslim base image)
+- WebSocket streaming requires no sticky sessions
+- User session data stored at /tmp/pi-web-users/{username} (not persisted across restarts)
+- For persistent sessions, add a volume mount for /tmp/pi-web-users
+- Server serves client static files from ./public directory
+- Health check at /api/health

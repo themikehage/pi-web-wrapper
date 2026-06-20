@@ -9,43 +9,43 @@
 ## Phase 2: Critical Files
 - [x] 2.1 Create about.md
 - [x] 2.2 Create steps.md
-- [ ] 2.3 Create AGENTS.md
+- [x] 2.3 Create AGENTS.md
 
 ## Phase 3: Project Setup
-- [ ] 3.1 Initialize monorepo structure
-- [ ] 3.2 Setup root package.json
-- [ ] 3.3 Setup server (Hono + pi SDK)
-- [ ] 3.4 Setup client (React + Vite + Tailwind)
-- [ ] 3.5 Setup shared package
-- [ ] 3.6 Install dependencies
-- [ ] 3.7 Validate builds
+- [x] 3.1 Initialize monorepo structure
+- [x] 3.2 Setup root package.json
+- [x] 3.3 Setup server (Hono + pi SDK)
+- [x] 3.4 Setup client (React + Vite + Tailwind)
+- [x] 3.5 Setup shared package
+- [x] 3.6 Install dependencies
+- [x] 3.7 Validate builds
 
 ## Phase 4: Authentication
-- [ ] 4.1 Backend auth routes (login, me)
-- [ ] 4.2 JWT middleware
-- [ ] 4.3 Frontend AuthContext
-- [ ] 4.4 Login page component
-- [ ] 4.5 Protected routes
+- [x] 4.1 Backend auth routes (login, me)
+- [x] 4.2 JWT middleware
+- [x] 4.3 Frontend AuthContext
+- [x] 4.4 Login page component
+- [x] 4.5 Protected routes
 
 ## Phase 5: WebSocket Integration
-- [ ] 5.1 Backend WebSocket handler
-- [ ] 5.2 Frontend WebSocket client
-- [ ] 5.3 Event types and handlers
-- [ ] 5.4 Reconnection logic
+- [x] 5.1 Backend WebSocket handler
+- [x] 5.2 Frontend WebSocket client
+- [x] 5.3 Event types and handlers
+- [x] 5.4 Reconnection logic
 
 ## Phase 6: Pi SDK Integration
-- [ ] 6.1 Session manager (create, get, destroy)
-- [ ] 6.2 Prompt endpoint
-- [ ] 6.3 Event streaming
-- [ ] 6.4 Abort functionality
+- [x] 6.1 Session manager (create, get, destroy)
+- [x] 6.2 Prompt endpoint
+- [x] 6.3 Event streaming
+- [x] 6.4 Abort functionality
 
 ## Phase 7: Frontend UI
-- [ ] 7.1 Layout components (Header, Sidebar, Main)
-- [ ] 7.2 Chat components (MessageList, InputArea)
-- [ ] 7.3 Message rendering (user, assistant, tool calls)
-- [ ] 7.4 Streaming UI
-- [ ] 7.5 Session management UI
-- [ ] 7.6 Model selector
+- [x] 7.1 Layout components (Header, Sidebar, Main)
+- [x] 7.2 Chat components (MessageList, InputArea)
+- [x] 7.3 Message rendering (user, assistant, tool calls)
+- [x] 7.4 Streaming UI
+- [x] 7.5 Session management UI
+- [x] 7.6 Model selector
 
 ## Phase 8: Polish
 - [ ] 8.1 Responsive design (375px, 768px, 1280px)
@@ -55,8 +55,8 @@
 - [ ] 8.5 Accessibility
 
 ## Phase 9: Docker & Deployment
-- [ ] 9.1 Create Dockerfile
-- [ ] 9.2 Create docker-compose.yml (dev)
-- [ ] 9.3 Deploy to Coolify
-- [ ] 9.4 Configure environment variables
-- [ ] 9.5 Verify deployment
+- [x] 9.1 Create Dockerfile
+- [x] 9.2 Create docker-compose.yml (dev)
+- [x] 9.3 Deploy to Coolify
+- [x] 9.4 Configure environment variables
+- [x] 9.5 Verify deployment
