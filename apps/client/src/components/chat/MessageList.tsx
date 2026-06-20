@@ -90,9 +90,9 @@ export const MessageList: FC<Props> = ({ messages }) => {
           >
             <div
               className={clsx(
-                "max-w-[85%] rounded-lg px-4 py-3",
+                "max-w-[90%] sm:max-w-[85%] rounded-lg px-3 sm:px-4 py-2 sm:py-3",
                 msg.role === "user"
-                  ? "bg-accent text-white"
+                  ? "bg-accent text-bg"
                   : msg.toolName
                     ? "bg-surface border border-warning/30"
                     : "bg-surface",

@@ -31,8 +31,8 @@ export function InputArea({ onSend, onAbort, streaming }: Props) {
   };
 
   return (
-    <div className="border-t border-surface p-4">
-      <div className="max-w-3xl mx-auto flex gap-3">
+    <div className="border-t border-surface p-3 sm:p-4">
+      <div className="max-w-3xl mx-auto flex gap-2 sm:gap-3">
         <textarea
           ref={textareaRef}
           value={input}
@@ -41,16 +41,16 @@ export function InputArea({ onSend, onAbort, streaming }: Props) {
           placeholder="Send a message... (Enter to send, Shift+Enter for new line)"
           rows={1}
           disabled={streaming}
-          className="flex-1 px-4 py-3 bg-surface border border-surface-hover rounded-lg
+          className="flex-1 px-3 sm:px-4 py-2 sm:py-3 bg-surface border border-surface-hover rounded-lg
                      text-text-primary placeholder-text-secondary outline-none
                      resize-none focus:border-accent transition-colors
-                     font-mono text-sm"
+                     font-mono text-xs sm:text-sm"
         />
         {streaming ? (
           <button
             onClick={onAbort}
-            className="px-4 py-3 bg-error text-white rounded-lg hover:opacity-90
-                       transition-opacity flex-shrink-0 font-semibold text-sm"
+            className="px-3 sm:px-4 py-2 sm:py-3 bg-error text-white rounded-lg hover:opacity-90
+                       transition-opacity flex-shrink-0 font-semibold text-xs sm:text-sm"
           >
             Stop
           </button>
@@ -58,8 +58,8 @@ export function InputArea({ onSend, onAbort, streaming }: Props) {
           <button
             onClick={handleSend}
             disabled={!input.trim()}
-            className="px-4 py-3 bg-accent text-white rounded-lg hover:opacity-90
-                       disabled:opacity-50 transition-opacity flex-shrink-0 font-semibold text-sm"
+            className="px-3 sm:px-4 py-2 sm:py-3 bg-accent text-bg rounded-lg hover:opacity-90
+                       disabled:opacity-50 transition-opacity flex-shrink-0 font-semibold text-xs sm:text-sm"
           >
             Send
           </button>

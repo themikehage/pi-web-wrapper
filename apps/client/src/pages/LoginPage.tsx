@@ -18,8 +18,8 @@ export function LoginPage() {
   };
 
   return (
-    <div className="h-screen flex items-center justify-center bg-bg">
-      <div className="w-full max-w-md px-8">
+    <div className="h-dvh flex items-center justify-center bg-bg">
+      <div className="w-full max-w-md px-6 sm:px-8">
         <h1 className="text-3xl font-display font-bold text-text-primary text-center mb-2">
           Pi Web
         </h1>
@@ -58,7 +58,7 @@ export function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 bg-accent text-white font-semibold rounded-lg
+            className="w-full py-3 bg-accent text-bg font-semibold rounded-lg
                        hover:opacity-90 disabled:opacity-50 transition-opacity"
           >
             {loading ? "Signing in..." : "Sign In"}

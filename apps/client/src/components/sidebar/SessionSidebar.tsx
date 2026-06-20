@@ -69,7 +69,7 @@ export function SessionSidebar({ activeSessionId, onSelectSession, onNewSession 
         <button
           onClick={createSession}
           disabled={creating}
-          className="w-full py-2 text-sm bg-accent text-white rounded-lg
+          className="w-full py-2 text-sm bg-accent text-bg rounded-lg
                      hover:opacity-90 disabled:opacity-50 transition-opacity"
         >
           {creating ? "Creating..." : "+ New Session"}
