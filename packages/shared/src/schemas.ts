@@ -27,8 +27,13 @@ export const ModelSettingsSchema = z.object({
   thinkingLevel: z.enum(["off", "minimal", "low", "medium", "high", "xhigh"]),
 });
 
+export const SetApiKeySchema = z.object({
+  apiKey: z.string().min(1),
+});
+
 export type Login = z.infer<typeof LoginSchema>;
 export type Prompt = z.infer<typeof PromptSchema>;
 export type Session = z.infer<typeof SessionSchema>;
 export type CreateSession = z.infer<typeof CreateSessionSchema>;
 export type ModelSettings = z.infer<typeof ModelSettingsSchema>;
+export type SetApiKey = z.infer<typeof SetApiKeySchema>;

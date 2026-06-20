@@ -13,8 +13,14 @@ interface UserSessionEntry {
   unsubscribe: () => void;
 }
 
+interface UserContext {
+  authStorage: AuthStorage;
+  modelRegistry: ModelRegistry;
+}
+
 class PiSessionManager {
   private sessions = new Map<string, UserSessionEntry>();
+  private users = new Map<string, UserContext>();
 
   private getSessionKey(username: string, sessionId: string): string {
     return `${username}:${sessionId}`;
@@ -26,6 +32,19 @@ class PiSessionManager {
       mkdirSync(dir, { recursive: true });
     }
     return dir;
+  }
+
+  getUserContext(username: string): UserContext {
+    const existing = this.users.get(username);
+    if (existing) return existing;
+
+    const userDir = this.ensureUserDir(username);
+    const authStorage = AuthStorage.create(`${userDir}/auth.json`);
+    const modelRegistry = ModelRegistry.create(authStorage);
+
+    const ctx: UserContext = { authStorage, modelRegistry };
+    this.users.set(username, ctx);
+    return ctx;
   }
 
   async getOrCreateSession(
@@ -43,8 +62,7 @@ class PiSessionManager {
       mkdirSync(sessionDir, { recursive: true });
     }
 
-    const authStorage = AuthStorage.create(`${userDir}/auth.json`);
-    const modelRegistry = ModelRegistry.create(authStorage);
+    const { authStorage, modelRegistry } = this.getUserContext(username);
 
     const { session } = await createAgentSession({
       cwd: sessionDir,
@@ -102,7 +120,7 @@ class PiSessionManager {
       unsubscribe();
       if (!called) {
         called = true;
-        listener({ type: "" } as AgentSessionEvent);
+        listener({ type: "" } as unknown as AgentSessionEvent);
       }
     };
   }

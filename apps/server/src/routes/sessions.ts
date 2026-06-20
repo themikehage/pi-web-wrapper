@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { authMiddleware, getAuthPayload } from "../middleware/auth";
 import { piSessionManager } from "../pi/session-manager";
-import { CreateSessionSchema, PromptSchema } from "shared";
+import { CreateSessionSchema, PromptSchema, ModelSettingsSchema } from "shared";
 
 const STORAGE_KEY = "pi-web-sessions";
 
@@ -81,3 +81,31 @@ sessionsRouter.delete("/:id", async (c) => {
 
   return c.json({ success: true });
 });
+
+sessionsRouter.post(
+  "/:id/model",
+  zValidator("json", ModelSettingsSchema),
+  async (c) => {
+    const sessionId = c.req.param("id");
+    const { provider, modelId, thinkingLevel } = c.req.valid("json");
+    const { username } = getAuthPayload(c);
+    const { modelRegistry } = piSessionManager.getUserContext(username);
+
+    const model = modelRegistry.find(provider, modelId);
+    if (!model) {
+      return c.json({ error: "Model not found" }, 404);
+    }
+
+    const session = piSessionManager.getSession(username, sessionId);
+    if (!session) {
+      return c.json({ error: "Session not found" }, 404);
+    }
+
+    await session.setModel(model);
+    if (thinkingLevel) {
+      session.setThinkingLevel(thinkingLevel);
+    }
+
+    return c.json({ success: true, model: { id: model.id, name: model.name, provider: model.provider as string } });
+  }
+);

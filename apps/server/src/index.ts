@@ -6,6 +6,7 @@ import { createBunWebSocket } from "hono/bun";
 import { authRouter } from "./routes/auth";
 import { sessionsRouter } from "./routes/sessions";
 import { modelsRouter } from "./routes/models";
+import { providersRouter } from "./routes/providers";
 import { onOpen, onClose, onMessage } from "./ws/handler";
 
 const { upgradeWebSocket, websocket } = createBunWebSocket();
@@ -18,6 +19,7 @@ app.use("/*", logger());
 app.route("/api/auth", authRouter);
 app.route("/api/sessions", sessionsRouter);
 app.route("/api/models", modelsRouter);
+app.route("/api/providers", providersRouter);
 
 app.get("/api/health", (c) => c.json({ status: "ok", time: Date.now() }));
 
