@@ -8,13 +8,17 @@ interface PiWebSocket {
 }
 
 let wsCounter = 0;
+const userMap = new Map<string, AuthPayload>();
 
 export function onOpen(_evt: Event, _ws: unknown) {
   const ws = _ws as unknown as PiWebSocket;
   ws.wsId = String(++wsCounter);
 }
 
-export function onClose(_evt: Event, _ws: unknown) {}
+export function onClose(_evt: Event, _ws: unknown) {
+  const ws = _ws as unknown as PiWebSocket;
+  userMap.delete(ws.wsId);
+}
 
 export async function onMessage(evt: MessageEvent<string>, _ws: unknown) {
   const ws = _ws as unknown as PiWebSocket;
@@ -34,7 +38,7 @@ export async function onMessage(evt: MessageEvent<string>, _ws: unknown) {
         data.token as string,
         process.env.JWT_SECRET!
       ) as AuthPayload;
-      ws.user = user;
+      userMap.set(ws.wsId, user);
       wsRaw.send(JSON.stringify({ type: "auth_success", wsId: ws.wsId }));
     } catch {
       wsRaw.send(JSON.stringify({ type: "auth_error", error: "Invalid token" }));
@@ -43,7 +47,8 @@ export async function onMessage(evt: MessageEvent<string>, _ws: unknown) {
     return;
   }
 
-  if (!ws.user) {
+  const user = userMap.get(ws.wsId);
+  if (!user) {
     wsRaw.send(JSON.stringify({ type: "error", error: "Not authenticated" }));
     return;
   }
@@ -53,7 +58,7 @@ export async function onMessage(evt: MessageEvent<string>, _ws: unknown) {
     const message = data.message as string;
 
     const session = await piSessionManager.getOrCreateSession(
-      ws.user.username,
+      user.username,
       sessionId
     );
 
@@ -75,7 +80,7 @@ export async function onMessage(evt: MessageEvent<string>, _ws: unknown) {
   if (data.type === "steer") {
     const sessionId = data.sessionId as string;
     const message = data.message as string;
-    const session = piSessionManager.getSession(ws.user.username, sessionId);
+    const session = piSessionManager.getSession(user.username, sessionId);
     if (session) {
       session.steer(message);
     }
@@ -84,7 +89,7 @@ export async function onMessage(evt: MessageEvent<string>, _ws: unknown) {
   if (data.type === "follow_up") {
     const sessionId = data.sessionId as string;
     const message = data.message as string;
-    const session = piSessionManager.getSession(ws.user.username, sessionId);
+    const session = piSessionManager.getSession(user.username, sessionId);
     if (session) {
       session.followUp(message);
     }
@@ -92,7 +97,7 @@ export async function onMessage(evt: MessageEvent<string>, _ws: unknown) {
 
   if (data.type === "abort") {
     const sessionId = data.sessionId as string;
-    const session = piSessionManager.getSession(ws.user.username, sessionId);
+    const session = piSessionManager.getSession(user.username, sessionId);
     if (session) {
       await session.abort();
       wsRaw.send(JSON.stringify({ type: "aborted", sessionId }));
