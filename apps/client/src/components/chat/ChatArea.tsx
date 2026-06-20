@@ -127,6 +127,7 @@ export function ChatArea({ sessionId }: Props) {
         onSend={handleSend}
         onAbort={handleAbort}
         streaming={streaming}
+        sessionId={sessionId}
       />
     </div>
   );

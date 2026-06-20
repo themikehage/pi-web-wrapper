@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { LoginPage } from "@/pages/LoginPage";
 import { SettingsPage } from "@/pages/SettingsPage";
@@ -7,6 +7,12 @@ import { ChatLayout } from "./ChatLayout";
 export function AppRouter() {
   const { token, user, loading } = useAuth();
   const [page, setPage] = useState<"chat" | "settings">("chat");
+
+  useEffect(() => {
+    const handler = () => setPage("settings");
+    window.addEventListener("navigate-settings", handler);
+    return () => window.removeEventListener("navigate-settings", handler);
+  }, []);
 
   if (loading) {
     return (

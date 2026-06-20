@@ -1,12 +1,14 @@
 import { useState, useRef, useEffect, type KeyboardEvent } from "react";
+import { ModelSelector } from "./ModelSelector";
 
 interface Props {
   onSend: (message: string) => void;
   onAbort: () => void;
   streaming: boolean;
+  sessionId: string | null;
 }
 
-export function InputArea({ onSend, onAbort, streaming }: Props) {
+export function InputArea({ onSend, onAbort, streaming, sessionId }: Props) {
   const [input, setInput] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -65,6 +67,7 @@ export function InputArea({ onSend, onAbort, streaming }: Props) {
           </button>
         )}
       </div>
+      <ModelSelector sessionId={sessionId} />
     </div>
   );
 }
