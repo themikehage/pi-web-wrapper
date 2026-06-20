@@ -10,6 +10,12 @@ interface PiWebSocket {
 let wsCounter = 0;
 const userMap = new Map<string, AuthPayload>();
 
+function safeSend(ws: { send: (data: string) => void }, data: string) {
+  try {
+    ws.send(data);
+  } catch {}
+}
+
 export function onOpen(_evt: Event, _ws: unknown) {
   const ws = _ws as unknown as PiWebSocket;
   ws.wsId = String(++wsCounter);
@@ -39,17 +45,17 @@ export async function onMessage(evt: MessageEvent<string>, _ws: unknown) {
         process.env.JWT_SECRET!
       ) as AuthPayload;
       userMap.set(ws.wsId, user);
-      wsRaw.send(JSON.stringify({ type: "auth_success", wsId: ws.wsId }));
+      safeSend(wsRaw, JSON.stringify({ type: "auth_success", wsId: ws.wsId }));
     } catch {
-      wsRaw.send(JSON.stringify({ type: "auth_error", error: "Invalid token" }));
-      wsRaw.close();
+      safeSend(wsRaw, JSON.stringify({ type: "auth_error", error: "Invalid token" }));
+      try { wsRaw.close(); } catch {}
     }
     return;
   }
 
   const user = userMap.get(ws.wsId);
   if (!user) {
-    wsRaw.send(JSON.stringify({ type: "error", error: "Not authenticated" }));
+    safeSend(wsRaw, JSON.stringify({ type: "error", error: "Not authenticated" }));
     return;
   }
 
@@ -63,13 +69,14 @@ export async function onMessage(evt: MessageEvent<string>, _ws: unknown) {
     );
 
     const unsubscribe = session.subscribe((agentEvent) => {
-      wsRaw.send(JSON.stringify(agentEvent));
+      safeSend(wsRaw, JSON.stringify(agentEvent));
     });
 
     try {
       await session.prompt(message);
     } catch (error) {
-      wsRaw.send(
+      safeSend(
+        wsRaw,
         JSON.stringify({ type: "agent_error", sessionId, error: String(error) })
       );
     }
@@ -100,7 +107,7 @@ export async function onMessage(evt: MessageEvent<string>, _ws: unknown) {
     const session = piSessionManager.getSession(user.username, sessionId);
     if (session) {
       await session.abort();
-      wsRaw.send(JSON.stringify({ type: "aborted", sessionId }));
+      safeSend(wsRaw, JSON.stringify({ type: "aborted", sessionId }));
     }
   }
 }

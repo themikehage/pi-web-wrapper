@@ -30,12 +30,15 @@ export function useWebSocket(sessionId: string | null): WebSocketState {
     ws.onopen = () => {
       reconnectAttempts.current = 0;
       ws.send(JSON.stringify({ type: "auth", token, sessionId }));
-      setConnected(true);
     };
 
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
+        if (data.type === "auth_success") {
+          setConnected(true);
+          return;
+        }
         if (data.type === "auth_error") {
           setConnected(false);
           ws.close();
