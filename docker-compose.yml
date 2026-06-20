@@ -1,0 +1,18 @@
+services:
+  pi-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - JWT_SECRET=change-me-in-production
+      - AUTH_USERNAME=admin
+      - AUTH_PASSWORD_HASH=$2a$10$jeTXh9CmeR3MrPtc6ICGgO5ExqWq8UGUqXvrY1QW4merJBhozotQa
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+    volumes:
+      - pi-web-users:/tmp/pi-web-users
+
+volumes:
+  pi-web-users:

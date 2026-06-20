@@ -1,0 +1,22 @@
+{
+  "name": "server",
+  "scripts": {
+    "dev": "bun run --watch src/index.ts",
+    "build": "bun build src/index.ts --outdir ./dist",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@earendil-works/pi-coding-agent": "^0.79.8",
+    "@hono/zod-validator": "^0.4",
+    "bcryptjs": "^2.4",
+    "hono": "^4",
+    "jsonwebtoken": "^9",
+    "zod": "^3"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4",
+    "@types/bun": "latest",
+    "@types/jsonwebtoken": "^9",
+    "typescript": "^5"
+  }
+}
