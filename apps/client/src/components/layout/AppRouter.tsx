@@ -24,5 +24,5 @@ export function AppRouter() {
     return <SettingsPage onClose={() => navigate("/")} />;
   }
 
-  return <ChatLayout sessionId={route.sessionId} />;
+  return <ChatLayout sessionId={route.sessionId} onNavigate={navigate} />;
 }

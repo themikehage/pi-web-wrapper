@@ -1,35 +1,34 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { SessionSidebar } from "@/components/sidebar/SessionSidebar";
 import { ChatArea } from "@/components/chat/ChatArea";
-import { useRouter } from "@/hooks/useRouter";
 import { useState, useCallback } from "react";
 
 interface Props {
   sessionId: string | null;
+  onNavigate: (path: string) => void;
 }
 
-export function ChatLayout({ sessionId }: Props) {
+export function ChatLayout({ sessionId, onNavigate }: Props) {
   const { user, logout } = useAuth();
-  const { navigate } = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleSelectSession = useCallback((id: string) => {
     if (id) {
-      navigate(`/session/${id}`);
+      onNavigate(`/session/${id}`);
     } else {
-      navigate("/");
+      onNavigate("/");
     }
     setSidebarOpen(false);
-  }, [navigate]);
+  }, [onNavigate]);
 
   const handleNewSession = useCallback((id: string) => {
-    navigate(`/session/${id}`);
+    onNavigate(`/session/${id}`);
     setSidebarOpen(false);
-  }, [navigate]);
+  }, [onNavigate]);
 
   const handleOpenSettings = useCallback(() => {
-    navigate("/settings");
-  }, [navigate]);
+    onNavigate("/settings");
+  }, [onNavigate]);
 
   return (
     <div className="h-dvh flex flex-col bg-bg">
