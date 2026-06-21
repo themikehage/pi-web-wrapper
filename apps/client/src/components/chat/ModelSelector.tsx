@@ -48,9 +48,9 @@ export function ModelSelector({ sessionId }: Props) {
     })
       .then((res) => res.json())
       .then((data) => {
-        const configured = (data.providers ?? []).filter(
-          (p: ProviderInfo) => p.authStatus.configured
-        );
+        const configured = (data.providers ?? [])
+          .filter((p: ProviderInfo) => p.authStatus.configured)
+          .sort((a: ProviderInfo, b: ProviderInfo) => a.name.localeCompare(b.name));
         setProviders(configured);
       })
       .catch(() => {});

@@ -24,7 +24,12 @@ export function SettingsPage({ onClose }: { onClose: () => void }) {
       });
       if (!res.ok) throw new Error("Failed to load providers");
       const data = await res.json();
-      setProviders(data.providers ?? []);
+      const sorted = (data.providers ?? []).sort((a: ProviderInfo, b: ProviderInfo) => {
+        if (a.authStatus.configured && !b.authStatus.configured) return -1;
+        if (!a.authStatus.configured && b.authStatus.configured) return 1;
+        return a.name.localeCompare(b.name);
+      });
+      setProviders(sorted);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error loading providers");
     } finally {
