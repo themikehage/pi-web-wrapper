@@ -93,6 +93,16 @@ export async function onMessage(evt: MessageEvent<string>, _ws: unknown) {
           );
           return;
         }
+      } else {
+        safeSend(
+          wsRaw,
+          JSON.stringify({
+            type: "agent_error",
+            sessionId,
+            error: "No providers configured. Go to Settings to add an API key.",
+          })
+        );
+        return;
       }
     }
 
