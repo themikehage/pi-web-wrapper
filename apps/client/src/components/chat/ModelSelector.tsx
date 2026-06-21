@@ -123,7 +123,7 @@ export function ModelSelector({ sessionId }: Props) {
     : null;
 
   return (
-    <div className="max-w-3xl mx-auto mt-2 relative" ref={dropdownRef}>
+    <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => {
           setOpen(!open);

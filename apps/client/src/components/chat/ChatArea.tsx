@@ -122,13 +122,22 @@ export function ChatArea({ sessionId }: Props) {
   }, [sessionId, subscribe]);
 
   const handleSend = useCallback(
-    (message: string) => {
+    (message: string, option?: "steer" | "follow_up", tools?: string[]) => {
       if (!message.trim() || !sessionId) return;
 
-      const userMsg: Message = { role: "user", content: message };
-      setMessages((prev) => [...prev, userMsg]);
-
-      send({ type: "prompt", message, sessionId });
+      if (option === "steer") {
+        const userMsg: Message = { role: "user", content: `[Steer] ${message}` };
+        setMessages((prev) => [...prev, userMsg]);
+        send({ type: "steer", message, sessionId });
+      } else if (option === "follow_up") {
+        const userMsg: Message = { role: "user", content: `[Follow-up] ${message}` };
+        setMessages((prev) => [...prev, userMsg]);
+        send({ type: "follow_up", message, sessionId });
+      } else {
+        const userMsg: Message = { role: "user", content: message };
+        setMessages((prev) => [...prev, userMsg]);
+        send({ type: "prompt", message, sessionId, tools });
+      }
     },
     [sessionId, send]
   );
