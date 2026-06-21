@@ -40,7 +40,7 @@ const port = parseInt(process.env.PORT ?? "3000");
 
 const server = Bun.serve({
   fetch(req, server) {
-    return app.fetch(req, {}, server as unknown as Parameters<typeof app.fetch>[2]);
+    return app.fetch(req, { server });
   },
   port,
   websocket,
