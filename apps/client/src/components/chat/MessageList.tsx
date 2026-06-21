@@ -148,17 +148,16 @@ export const MessageList: FC<Props> = ({ messages, onNavigate, sessionId }) => {
             animate={{ opacity: 1, y: 0 }}
             className={clsx(
               "flex gap-3",
+              msg.toolName ? "w-full" : "",
               msg.role === "user" ? "justify-end" : "justify-start"
             )}
           >
             <div
               className={clsx(
-                "max-w-[90%] sm:max-w-[85%] rounded-lg px-3 sm:px-4 py-2 sm:py-3 shadow-sm",
-                msg.role === "user"
-                  ? "bg-accent text-bg"
-                  : msg.toolName
-                    ? "bg-surface border border-warning/30"
-                    : "bg-surface",
+                msg.toolName
+                  ? "w-full"
+                  : "max-w-[90%] sm:max-w-[85%] rounded-lg px-3 sm:px-4 py-2 sm:py-3 shadow-sm bg-surface",
+                msg.role === "user" && "bg-accent text-bg",
                 msg.isError && "border border-error/50"
               )}
             >
