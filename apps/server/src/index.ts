@@ -36,7 +36,7 @@ app.use("/assets/*", serveStatic({ root: "./public" }));
 app.get("/*", serveStatic({ path: "./public/index.html" }));
 app.get("/favicon.ico", serveStatic({ path: "./public/favicon.ico" }));
 
-const port = parseInt(process.env.PORT ?? "3000");
+const port = parseInt(process.env.PORT ?? "3001");
 
 const server = Bun.serve({
   fetch(req, server) {
