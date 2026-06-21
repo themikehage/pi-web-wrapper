@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Fragment } from "react";
 
 interface ProviderInfo {
   id: string;
@@ -106,52 +106,63 @@ export function SettingsPage({ onClose }: { onClose: () => void }) {
               </div>
             ) : (
               <div className="space-y-3">
-                {providers.map((p) => (
-                  <div
-                    key={p.id}
-                    className="bg-surface rounded-lg p-3 sm:p-4 flex items-center justify-between"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <span
-                        className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
-                          p.authStatus.configured ? "bg-success" : "bg-surface-hover"
-                        }`}
-                      />
-                      <div className="min-w-0">
-                        <div className="text-text-primary text-sm font-medium truncate">
-                          {p.name}
+                {providers.map((p, index) => {
+                  const showDivider = index > 0 && !p.authStatus.configured && providers[index - 1].authStatus.configured;
+                  return (
+                    <Fragment key={p.id}>
+                      {showDivider && (
+                        <div className="flex items-center gap-3 pt-4 pb-1">
+                          <div className="h-px bg-surface-hover flex-1" />
+                          <span className="text-[10px] text-text-secondary uppercase tracking-widest font-semibold">
+                            Unconnected
+                          </span>
+                          <div className="h-px bg-surface-hover flex-1" />
                         </div>
-                        <div className="text-text-secondary text-xs">
-                          {p.models.length} model{p.models.length !== 1 ? "s" : ""}{" "}
-                          {p.authStatus.configured
-                            ? `- ${p.authStatus.source ?? "configured"}`
-                            : "- no key set"}
+                      )}
+                      <div className="bg-surface rounded-lg p-3 sm:p-4 flex items-center justify-between">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <span
+                            className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+                              p.authStatus.configured ? "bg-success" : "bg-surface-hover"
+                            }`}
+                          />
+                          <div className="min-w-0">
+                            <div className="text-text-primary text-sm font-medium truncate">
+                              {p.name}
+                            </div>
+                            <div className="text-text-secondary text-xs">
+                              {p.models.length} model{p.models.length !== 1 ? "s" : ""}{" "}
+                              {p.authStatus.configured
+                                ? `- ${p.authStatus.source ?? "configured"}`
+                                : "- no key set"}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+                          {p.authStatus.configured ? (
+                            <button
+                              onClick={() => handleRemoveKey(p.id)}
+                              className="text-xs text-text-secondary hover:text-error transition-colors px-2 py-1"
+                            >
+                              Remove
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setSelectedProvider(p.id);
+                                setApiKey("");
+                                setError("");
+                              }}
+                              className="text-xs bg-accent text-bg font-semibold px-3 py-1.5 rounded-lg hover:opacity-90 transition-opacity"
+                            >
+                              Add Key
+                            </button>
+                          )}
                         </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-                      {p.authStatus.configured ? (
-                        <button
-                          onClick={() => handleRemoveKey(p.id)}
-                          className="text-xs text-text-secondary hover:text-error transition-colors px-2 py-1"
-                        >
-                          Remove
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => {
-                            setSelectedProvider(p.id);
-                            setApiKey("");
-                            setError("");
-                          }}
-                          className="text-xs bg-accent text-bg font-semibold px-3 py-1.5 rounded-lg hover:opacity-90 transition-opacity"
-                        >
-                          Add Key
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                    </Fragment>
+                  );
+                })}
               </div>
             )}
           </div>
