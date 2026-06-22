@@ -61,7 +61,7 @@ export function RichMarkdown({ content }: Props) {
             }
 
             return (
-              <div className="my-3 rounded-lg overflow-hidden border border-surface-hover shadow-md font-mono text-xs">
+              <div className="my-3 rounded-lg overflow-x-auto border border-surface-hover shadow-md font-mono text-xs">
                 <div className="bg-surface px-3 py-1.5 border-b border-surface-hover text-[10px] text-text-secondary flex justify-between items-center">
                   <span>{match ? match[1] : "code"}</span>
                   <button
@@ -79,6 +79,7 @@ export function RichMarkdown({ content }: Props) {
                     margin: 0,
                     background: "#171717",
                     padding: "0.75rem",
+                    overflowX: "auto",
                   }}
                 >
                   {codeString}
