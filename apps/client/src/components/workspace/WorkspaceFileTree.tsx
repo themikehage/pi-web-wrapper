@@ -11,6 +11,8 @@ interface FileTreeProps {
   onRename: (oldPath: string, newPath: string) => void;
   onCreate: (parentPath: string, name: string, type: "file" | "folder") => void;
   pathContents: Record<string, FileInfo[]>;
+  addingRootType: "file" | "folder" | null;
+  onCancelAddingRoot: () => void;
 }
 
 interface TreeNodeProps {
@@ -342,9 +344,63 @@ export function WorkspaceFileTree({
   onRename,
   onCreate,
   pathContents,
+  addingRootType,
+  onCancelAddingRoot,
 }: FileTreeProps) {
+  const [newRootName, setNewRootName] = useState("");
+
+  const handleRootSubmit = () => {
+    if (newRootName && addingRootType) {
+      onCreate("", newRootName, addingRootType);
+      setNewRootName("");
+      onCancelAddingRoot();
+    }
+  };
+
   return (
     <div className="space-y-0.5 max-h-full overflow-y-auto pr-1">
+      {addingRootType && (
+        <div className="flex items-center gap-1.5 px-2 py-1 pl-6">
+          {addingRootType === "folder" ? (
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              className="text-warning flex-shrink-0"
+            >
+              <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+            </svg>
+          ) : (
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              className="text-text-secondary flex-shrink-0"
+            >
+              <path
+                fillRule="evenodd"
+                d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6h8v2H6v-2zm0 4h8v2H6v-2zm0-8h4v2H6V6z"
+                clipRule="evenodd"
+              />
+            </svg>
+          )}
+          <input
+            type="text"
+            value={newRootName}
+            onChange={(e) => setNewRootName(e.target.value)}
+            onBlur={() => setTimeout(onCancelAddingRoot, 200)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleRootSubmit();
+              if (e.key === "Escape") onCancelAddingRoot();
+            }}
+            placeholder={`new ${addingRootType}...`}
+            className="flex-1 min-w-0 bg-bg border border-accent/50 outline-none text-text-primary px-1 rounded text-xs py-0.5"
+            autoFocus
+          />
+        </div>
+      )}
       {files.map((file) => (
         <TreeNode
           key={file.path}

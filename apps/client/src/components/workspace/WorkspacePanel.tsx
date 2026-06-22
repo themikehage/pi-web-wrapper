@@ -15,6 +15,7 @@ export function WorkspacePanel({ onClose }: Props) {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [addingRootType, setAddingRootType] = useState<"file" | "folder" | null>(null);
 
   // Helper for auth headers
   const getHeaders = useCallback(() => {
@@ -305,7 +306,6 @@ export function WorkspacePanel({ onClose }: Props) {
 
   return (
     <div className="w-full h-full flex flex-col bg-surface overflow-hidden border-l border-surface select-none">
-      {/* Workspace Header */}
       <div className="h-10 sm:h-12 px-3 border-b border-surface flex items-center justify-between flex-shrink-0 bg-bg">
         <div className="flex items-center gap-2">
           <svg
@@ -336,7 +336,7 @@ export function WorkspacePanel({ onClose }: Props) {
             </svg>
           </button>
           <button
-            onClick={() => handleCreate("", "new_file.txt", "file")}
+            onClick={() => setAddingRootType("file")}
             className="p-1 text-text-secondary hover:text-success rounded transition-colors cursor-pointer"
             title="New File in Root"
           >
@@ -347,6 +347,15 @@ export function WorkspacePanel({ onClose }: Props) {
                 d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
                 clipRule="evenodd"
               />
+            </svg>
+          </button>
+          <button
+            onClick={() => setAddingRootType("folder")}
+            className="p-1 text-text-secondary hover:text-warning rounded transition-colors cursor-pointer"
+            title="New Folder in Root"
+          >
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
             </svg>
           </button>
           <button
@@ -374,10 +383,8 @@ export function WorkspacePanel({ onClose }: Props) {
         </div>
       )}
 
-      {/* Grid container splitting file tree and editor vertically */}
-      <div className="flex-1 flex flex-col overflow-hidden min-h-0">
-        {/* Top pane: File Tree */}
-        <div className="flex-1 flex flex-col overflow-hidden min-h-[150px] p-3">
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
+        <div className="w-full md:w-80 lg:w-96 border-b md:border-b-0 md:border-r border-surface flex flex-col overflow-hidden p-3 bg-surface/20 flex-shrink-0 min-h-[250px] md:min-h-0 md:h-full">
           <div className="mb-2.5 flex-shrink-0">
             <input
               type="text"
@@ -404,13 +411,14 @@ export function WorkspacePanel({ onClose }: Props) {
                 onRename={handleRename}
                 onCreate={handleCreate}
                 pathContents={pathContents}
+                addingRootType={addingRootType}
+                onCancelAddingRoot={() => setAddingRootType(null)}
               />
             )}
           </div>
         </div>
 
-        {/* Bottom pane: File Editor */}
-        <div className="flex-1 min-h-[150px] border-t border-surface overflow-hidden flex flex-col">
+        <div className="flex-1 min-w-0 overflow-hidden flex flex-col bg-bg h-full">
           <WorkspaceFileEditor file={selectedFile} onSave={handleSaveFile} />
         </div>
       </div>

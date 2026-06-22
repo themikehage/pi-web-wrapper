@@ -3,7 +3,8 @@ import { useState, useEffect, useCallback } from "react";
 export type Route =
   | { page: "chat"; sessionId: string | null }
   | { page: "settings" }
-  | { page: "skills" };
+  | { page: "skills" }
+  | { page: "workspace" };
 
 function parseRoute(): Route {
   const path = window.location.pathname;
@@ -16,6 +17,9 @@ function parseRoute(): Route {
   }
   if (path === "/skills") {
     return { page: "skills" };
+  }
+  if (path === "/workspace") {
+    return { page: "workspace" };
   }
   return { page: "chat", sessionId: null };
 }
