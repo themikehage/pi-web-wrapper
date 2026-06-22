@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 
@@ -42,6 +43,7 @@ export function RichMarkdown({ content }: Props) {
   return (
     <div className="prose prose-invert max-w-none overflow-x-auto text-xs sm:text-sm leading-relaxed font-sans">
       <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
         urlTransform={customUrlTransform}
         components={{
           code({ className, children, ...props }) {
@@ -130,12 +132,32 @@ export function RichMarkdown({ content }: Props) {
           },
           table({ children }) {
             return (
-              <div className="overflow-x-auto my-2">
-                <table className="min-w-full border-collapse border border-surface-hover text-xs">
+              <div className="overflow-x-auto my-3 rounded-lg border border-surface-hover shadow-sm">
+                <table className="min-w-full border-collapse text-xs">
                   {children}
                 </table>
               </div>
             );
+          },
+          thead({ children }) {
+            return <thead className="bg-surface-hover/60">{children}</thead>;
+          },
+          th({ children }) {
+            return (
+              <th className="px-3 py-2 text-left font-semibold text-text-primary border-b border-surface-hover whitespace-nowrap">
+                {children}
+              </th>
+            );
+          },
+          td({ children }) {
+            return (
+              <td className="px-3 py-1.5 text-text-secondary border-b border-surface-hover/40">
+                {children}
+              </td>
+            );
+          },
+          tr({ children }) {
+            return <tr className="hover:bg-surface-hover/20 transition-colors">{children}</tr>;
           },
           a({ href, children, ...props }) {
             if (href?.startsWith("workspace-file://")) {

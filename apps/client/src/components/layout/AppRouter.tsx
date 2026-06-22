@@ -1,15 +1,47 @@
+import { useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { LoginPage } from "@/pages/LoginPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { SkillsPage } from "@/pages/SkillsPage";
 import { WorkspacePanel } from "@/components/workspace/WorkspacePanel";
 import { ChatArea } from "@/components/chat/ChatArea";
+import { DashboardPage } from "@/pages/DashboardPage";
 import { useRouter } from "@/hooks/useRouter";
 import { MainLayout } from "./MainLayout";
 
 export function AppRouter() {
   const { token, user, loading } = useAuth();
   const { route, navigate } = useRouter();
+
+  // Cargar el repo activo y el estado de contexto desde localStorage
+  const [activeRepoName, setActiveRepoName] = useState<string | null>(() => {
+    return localStorage.getItem("active-repo") || null;
+  });
+
+  const [hasContext, setHasContext] = useState<boolean>(() => {
+    return localStorage.getItem("has-context") === "true";
+  });
+
+  const handleSelectRepo = useCallback((repoName: string | null) => {
+    if (repoName === null) {
+      localStorage.removeItem("active-repo");
+    } else {
+      localStorage.setItem("active-repo", repoName);
+    }
+    localStorage.setItem("has-context", "true");
+    setActiveRepoName(repoName);
+    setHasContext(true);
+    // Redirigir a home/chat al cambiar de repositorio
+    navigate("/");
+  }, [navigate]);
+
+  const handleLeaveContext = useCallback(() => {
+    localStorage.removeItem("active-repo");
+    localStorage.removeItem("has-context");
+    setActiveRepoName(null);
+    setHasContext(false);
+    navigate("/");
+  }, [navigate]);
 
   if (loading) {
     return (
@@ -23,8 +55,18 @@ export function AppRouter() {
     return <LoginPage />;
   }
 
+  // Si el usuario no ha seleccionado un contexto de trabajo (Repo o Global), se muestra el Dashboard
+  if (!hasContext) {
+    return <DashboardPage onSelectRepo={handleSelectRepo} />;
+  }
+
   return (
-    <MainLayout route={route} onNavigate={navigate}>
+    <MainLayout
+      route={route}
+      onNavigate={navigate}
+      activeRepoName={activeRepoName}
+      onLeaveContext={handleLeaveContext}
+    >
       {route.page === "settings" && (
         <SettingsPage />
       )}
@@ -32,10 +74,10 @@ export function AppRouter() {
         <SkillsPage />
       )}
       {route.page === "workspace" && (
-        <WorkspacePanel />
+        <WorkspacePanel key={activeRepoName || "global"} activeRepoName={activeRepoName} />
       )}
       {route.page === "chat" && (
-        <ChatArea key={route.sessionId} sessionId={route.sessionId} />
+        <ChatArea key={`${route.sessionId}-${activeRepoName}`} sessionId={route.sessionId} />
       )}
     </MainLayout>
   );

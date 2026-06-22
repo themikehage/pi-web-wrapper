@@ -89,6 +89,21 @@ export function ChatArea({ sessionId }: Props) {
       window.dispatchEvent(new CustomEvent("workspaceUpdated"));
     });
 
+    const unsubMsgStart = subscribe("message_start", (data: unknown) => {
+      const evt = data as Record<string, unknown>;
+      const msg = evt.message as Message | undefined;
+      if (!msg) return;
+      if (msg.role === "user") return;
+
+      setMessages((prev) => {
+        const last = prev[prev.length - 1];
+        if (last?.isStreaming) {
+          return [...prev.slice(0, -1), { ...msg, isStreaming: true }];
+        }
+        return [...prev, { ...msg, isStreaming: true }];
+      });
+    });
+
     const unsubMsg = subscribe("message_update", (data: unknown) => {
       const evt = data as Record<string, unknown>;
       const msg = evt.message as Message | undefined;
@@ -107,10 +122,14 @@ export function ChatArea({ sessionId }: Props) {
       const evt = data as Record<string, unknown>;
       const msg = evt.message as Message | undefined;
       if (!msg) return;
+      if (msg.role === "user") return;
 
       setMessages((prev) => {
-        const rest = prev.slice(0, -1);
-        return [...rest, msg];
+        const last = prev[prev.length - 1];
+        if (last?.isStreaming) {
+          return [...prev.slice(0, -1), msg];
+        }
+        return [...prev, msg];
       });
       window.dispatchEvent(new CustomEvent("workspaceUpdated"));
     });
@@ -123,6 +142,7 @@ export function ChatArea({ sessionId }: Props) {
     return () => {
       unsubStart();
       unsubEnd();
+      unsubMsgStart();
       unsubMsg();
       unsubMsgEnd();
       unsubError();

@@ -73,3 +73,16 @@
 - [x] 11.3 Workspace file operations API (GET, PUT, POST, DELETE, PATCH)
 - [x] 11.4 Collapsible Workspace Explorer panel and code editor inside front web
 
+---
+
+## Phase 12: Workspace Organizado y Agentes Híbridos
+- [x] 12.1 Shared Types & Schemas con `repoName`
+- [x] 12.2 Inicialización de workspace con subcarpetas (`repos`, `assets`, `memories`)
+- [x] 12.3 Persistencia de metadatos de sesión en `metadata.json`
+- [x] 12.4 CWD de agente y scoping de repositorio dinámicos en backend
+- [x] 12.5 Componente Dashboard en React para administración de proyectos y clonación git
+- [x] 12.6 Segmentación de sesiones e interfaz MainLayout para Modo Global y Modo Proyecto
+
+## Proximas ideas:
+- Sistema de prompts para que el agente pueda interactuar con la api del backend y auto usarse
+

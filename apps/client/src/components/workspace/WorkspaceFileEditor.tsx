@@ -3,6 +3,7 @@ import type { FileInfo } from "shared";
 
 interface Props {
   file: FileInfo | null;
+  activeRepoName: string | null;
   onSave: (path: string, content: string) => Promise<void>;
 }
 
@@ -20,7 +21,7 @@ function decodeBase64Unicode(str: string): string {
   }
 }
 
-export function WorkspaceFileEditor({ file, onSave }: Props) {
+export function WorkspaceFileEditor({ file, activeRepoName, onSave }: Props) {
   const [content, setContent] = useState("");
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -116,12 +117,13 @@ export function WorkspaceFileEditor({ file, onSave }: Props) {
   }
 
   const token = localStorage.getItem("token");
+  const repoQuery = activeRepoName ? `&repo=${encodeURIComponent(activeRepoName)}` : "";
   const rawFileUrl = `/api/workspace/${file.path}?raw=true&token=${encodeURIComponent(
     token || ""
-  )}`;
+  )}${repoQuery}`;
   const downloadUrl = `/api/workspace/${file.path}?download=true&token=${encodeURIComponent(
     token || ""
-  )}`;
+  )}${repoQuery}`;
 
   return (
     <div className="h-full flex flex-col bg-[#0b0f19] border-t border-surface sm:border-t-0 sm:border-l border-surface">

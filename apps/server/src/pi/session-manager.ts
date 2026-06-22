@@ -48,6 +48,25 @@ export function getResolvedSkillPaths(cwd: string): string[] {
   return paths;
 }
 
+export function ensureWorkspaceStructure(username: string): string {
+  const userDir = `/tmp/pi-web-users/${username}`;
+  const workspaceDir = join(userDir, "workspace");
+  const subdirs = [
+    join(workspaceDir, "repos"),
+    join(workspaceDir, "assets", "uploads"),
+    join(workspaceDir, "assets", "generated"),
+    join(workspaceDir, "memories", "repos"),
+    join(workspaceDir, "memories", "sessions"),
+  ];
+
+  for (const dir of subdirs) {
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true });
+    }
+  }
+  return workspaceDir;
+}
+
 interface UserSessionEntry {
   session: AgentSession;
   unsubscribe: () => void;
@@ -125,7 +144,8 @@ class PiSessionManager {
 
   async getOrCreateSession(
     username: string,
-    sessionId: string
+    sessionId: string,
+    repoName?: string
   ): Promise<AgentSession> {
     const key = this.getSessionKey(username, sessionId);
     const existing = this.sessions.get(key);
@@ -138,8 +158,31 @@ class PiSessionManager {
       mkdirSync(sessionDir, { recursive: true });
     }
 
-    const workspaceDir = `${userDir}/workspace`;
-    if (!existsSync(workspaceDir)) {
+    // Persistir metadatos de sesión (guardar y leer metadata.json con repoName)
+    const metadataPath = join(sessionDir, "metadata.json");
+    let resolvedRepoName = repoName;
+
+    if (repoName) {
+      writeFileSync(metadataPath, JSON.stringify({ repoName }, null, 2), "utf-8");
+    } else if (existsSync(metadataPath)) {
+      try {
+        const metadata = JSON.parse(readFileSync(metadataPath, "utf-8"));
+        resolvedRepoName = metadata.repoName;
+      } catch (e) {
+        console.error(`Failed to read metadata.json for session ${sessionId}:`, e);
+      }
+    }
+
+    // Asegurar estructura de carpetas
+    ensureWorkspaceStructure(username);
+
+    // Asignar cwd dinámicamente
+    const workspaceBase = join(userDir, "workspace");
+    const workspaceDir = resolvedRepoName
+      ? resolve(workspaceBase, "repos", resolvedRepoName)
+      : workspaceBase;
+
+    if (resolvedRepoName && !existsSync(workspaceDir)) {
       mkdirSync(workspaceDir, { recursive: true });
     }
 

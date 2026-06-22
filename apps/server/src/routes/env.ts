@@ -12,10 +12,11 @@ envRouter.use("/*", authMiddleware);
 envRouter.get("/", (c) => {
   const { username } = getAuthPayload(c);
   const userEnv = piSessionManager.getUserEnv(username);
+  const reveal = c.req.query("reveal") === "true";
 
-  const envList = Object.entries(userEnv).map(([key]) => ({
+  const envList = Object.entries(userEnv).map(([key, value]) => ({
     key,
-    value: "••••••••",
+    value: reveal ? value : "••••••••",
   }));
 
   return c.json({ env: envList });

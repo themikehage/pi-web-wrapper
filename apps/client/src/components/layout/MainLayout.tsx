@@ -6,10 +6,12 @@ import type { Route } from "@/hooks/useRouter";
 interface Props {
   route: Route;
   onNavigate: (path: string) => void;
+  activeRepoName: string | null;
+  onLeaveContext: () => void;
   children: ReactNode;
 }
 
-export function MainLayout({ route, onNavigate, children }: Props) {
+export function MainLayout({ route, onNavigate, activeRepoName, onLeaveContext, children }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const pendingWorkspaceFile = useRef<string | null>(null);
@@ -64,15 +66,16 @@ export function MainLayout({ route, onNavigate, children }: Props) {
   const sessionId = route.page === "chat" ? route.sessionId : null;
 
   const getPageName = () => {
+    const contextName = activeRepoName ? `${activeRepoName}` : "Global";
     switch (route.page) {
       case "settings":
-        return "Settings";
+        return `Settings [${contextName}]`;
       case "skills":
-        return "Skills";
+        return `Skills [${contextName}]`;
       case "workspace":
-        return "Workspace";
+        return `Workspace [${contextName}]`;
       default:
-        return route.sessionId ? "Chat" : "Pi Web";
+        return route.sessionId ? `Chat [${contextName}]` : `Pi Web [${contextName}]`;
     }
   };
 
@@ -80,6 +83,17 @@ export function MainLayout({ route, onNavigate, children }: Props) {
     <div className="h-dvh flex flex-col bg-bg text-text-primary font-sans">
       <header className="h-10 sm:h-12 flex items-center justify-between px-3 sm:px-4 border-b border-surface flex-shrink-0">
         <div className="flex items-center gap-2 sm:gap-3">
+          <button
+            onClick={onLeaveContext}
+            className="px-2.5 py-1 text-xs bg-surface hover:bg-accent hover:text-bg text-text-primary border border-surface-hover rounded-md transition-colors cursor-pointer mr-2 flex items-center gap-1 font-semibold"
+            title="Volver al Dashboard de Proyectos"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <line x1="19" y1="12" x2="5" y2="12" />
+              <polyline points="12 19 5 12 12 5" />
+            </svg>
+            Proyectos
+          </button>
           <div
             onClick={isChat ? () => setSidebarOpen(!sidebarOpen) : () => onNavigate("/")}
             className="p-1 text-accent hover:text-accent/80 cursor-pointer transition-colors"
@@ -152,6 +166,7 @@ export function MainLayout({ route, onNavigate, children }: Props) {
           >
             <SessionSidebar
               activeSessionId={sessionId}
+              activeRepoName={activeRepoName}
               onSelectSession={handleSelectSession}
               onNewSession={handleNewSession}
             />

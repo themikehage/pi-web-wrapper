@@ -27,8 +27,12 @@ function getUsername(c: any): string | null {
   }
 }
 
-function validateWorkspacePath(username: string, relativePath: string): string {
-  const workspaceDir = resolve(`/tmp/pi-web-users/${username}/workspace`);
+function validateWorkspacePath(username: string, relativePath: string, repoName?: string): string {
+  const workspaceBase = resolve(`/tmp/pi-web-users/${username}/workspace`);
+  const workspaceDir = repoName
+    ? resolve(workspaceBase, "repos", repoName)
+    : workspaceBase;
+
   if (!existsSync(workspaceDir)) {
     mkdirSync(workspaceDir, { recursive: true });
   }
@@ -117,7 +121,8 @@ const handleGetWorkspace = async (c: any) => {
   }
 
   try {
-    const fullPath = validateWorkspacePath(username, relativePath);
+    const repoName = c.req.query("repo");
+    const fullPath = validateWorkspacePath(username, relativePath, repoName);
     if (!existsSync(fullPath)) {
       return c.json({ error: "Path does not exist" }, 404);
     }
@@ -210,6 +215,90 @@ const handleGetWorkspace = async (c: any) => {
   }
 };
 
+// GET: list repos
+filesRouter.get("/workspace-repos", async (c) => {
+  const username = getUsername(c);
+  if (!username) return c.json({ error: "Unauthorized" }, 401);
+
+  try {
+    const reposDir = resolve(`/tmp/pi-web-users/${username}/workspace/repos`);
+    if (!existsSync(reposDir)) {
+      mkdirSync(reposDir, { recursive: true });
+    }
+
+    const entries = readdirSync(reposDir, { withFileTypes: true });
+    const repos = entries
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => {
+        const entryPath = join(reposDir, entry.name);
+        const stat = statSync(entryPath);
+        return {
+          name: entry.name,
+          path: entry.name,
+          lastModified: stat.mtime.toISOString(),
+        };
+      });
+
+    return c.json({ repos });
+  } catch (err: any) {
+    return c.json({ error: err.message || "Failed to list repositories" }, 500);
+  }
+});
+
+// POST: create or clone repo
+filesRouter.post("/workspace-repos", async (c) => {
+  const username = getUsername(c);
+  if (!username) return c.json({ error: "Unauthorized" }, 401);
+
+  try {
+    const body = await c.req.json().catch(() => ({}));
+    const { name, cloneUrl } = body;
+
+    if (!name || typeof name !== "string" || !/^[a-zA-Z0-9_-]+$/.test(name)) {
+      return c.json({ error: "Invalid repository name" }, 400);
+    }
+
+    const reposDir = resolve(`/tmp/pi-web-users/${username}/workspace/repos`);
+    if (!existsSync(reposDir)) {
+      mkdirSync(reposDir, { recursive: true });
+    }
+
+    const targetDir = join(reposDir, name);
+    if (existsSync(targetDir)) {
+      return c.json({ error: "Repository or directory already exists" }, 409);
+    }
+
+    if (cloneUrl) {
+      if (typeof cloneUrl !== "string" || !cloneUrl.startsWith("http")) {
+        return c.json({ error: "Invalid clone URL" }, 400);
+      }
+
+      const proc = Bun.spawn(["git", "clone", cloneUrl, name], {
+        cwd: reposDir,
+      });
+      await proc.exited;
+      if (proc.exitCode !== 0) {
+        return c.json({ error: "Git clone failed" }, 500);
+      }
+    } else {
+      mkdirSync(targetDir, { recursive: true });
+      const proc = Bun.spawn(["git", "init"], {
+        cwd: targetDir,
+      });
+      await proc.exited;
+    }
+
+    const stat = statSync(targetDir);
+    return c.json({
+      name,
+      path: name,
+      lastModified: stat.mtime.toISOString(),
+    }, 201);
+  } catch (err: any) {
+    return c.json({ error: err.message || "Failed to create repository" }, 500);
+  }
+});
+
 filesRouter.get("/workspace", handleGetWorkspace);
 filesRouter.get("/workspace/*", handleGetWorkspace);
 
@@ -225,7 +314,8 @@ const handlePutWorkspace = async (c: any) => {
   }
 
   try {
-    const fullPath = validateWorkspacePath(username, relativePath);
+    const repoName = c.req.query("repo");
+    const fullPath = validateWorkspacePath(username, relativePath, repoName);
     const body = await c.req.json().catch(() => ({}));
     const { type, content } = body;
 
@@ -271,7 +361,8 @@ const handlePostWorkspace = async (c: any) => {
   }
 
   try {
-    const fullPath = validateWorkspacePath(username, relativePath);
+    const repoName = c.req.query("repo");
+    const fullPath = validateWorkspacePath(username, relativePath, repoName);
     const body = await c.req.parseBody();
     const file = body.file as File | undefined;
     if (!file) {
@@ -283,7 +374,10 @@ const handlePostWorkspace = async (c: any) => {
 
     // Validate the final resolved file save path
     const resolvedSavePath = resolve(savePath);
-    const workspaceDir = resolve(`/tmp/pi-web-users/${username}/workspace`);
+    const workspaceBase = resolve(`/tmp/pi-web-users/${username}/workspace`);
+    const workspaceDir = repoName
+      ? resolve(workspaceBase, "repos", repoName)
+      : workspaceBase;
     if (!resolvedSavePath.startsWith(workspaceDir + sep) && resolvedSavePath !== workspaceDir) {
       return c.json({ error: "Forbidden path traversal in upload" }, 403);
     }
@@ -317,7 +411,8 @@ const handleDeleteWorkspace = async (c: any) => {
   }
 
   try {
-    const fullPath = validateWorkspacePath(username, relativePath);
+    const repoName = c.req.query("repo");
+    const fullPath = validateWorkspacePath(username, relativePath, repoName);
     if (!existsSync(fullPath)) {
       return c.json({ error: "File not found" }, 404);
     }
@@ -349,7 +444,8 @@ const handlePatchWorkspace = async (c: any) => {
   }
 
   try {
-    const fullPath = validateWorkspacePath(username, relativePath);
+    const repoName = c.req.query("repo");
+    const fullPath = validateWorkspacePath(username, relativePath, repoName);
     if (!existsSync(fullPath)) {
       return c.json({ error: "Source file not found" }, 404);
     }
@@ -360,7 +456,7 @@ const handlePatchWorkspace = async (c: any) => {
       return c.json({ error: "Invalid target path" }, 400);
     }
 
-    const targetFullPath = validateWorkspacePath(username, newPath);
+    const targetFullPath = validateWorkspacePath(username, newPath, repoName);
     mkdirSync(dirname(targetFullPath), { recursive: true });
     renameSync(fullPath, targetFullPath);
 

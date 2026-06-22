@@ -15,10 +15,12 @@ export const SessionSchema = z.object({
   createdAt: z.string(),
   updatedAt: z.string(),
   messageCount: z.number(),
+  repoName: z.string().optional(),
 });
 
 export const CreateSessionSchema = z.object({
   name: z.string().min(1).max(100),
+  repoName: z.string().optional(),
 });
 
 export const ModelSettingsSchema = z.object({

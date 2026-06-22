@@ -27,6 +27,7 @@ export function SettingsPage() {
   const [activeTab, setActiveTab] = useState<"general" | "providers" | "env">("providers");
   const [isDevView, setIsDevView] = useState(false);
   const [bulkEnvText, setBulkEnvText] = useState("");
+  const [isRevealed, setIsRevealed] = useState(false);
 
   const token = localStorage.getItem("token");
 
@@ -121,12 +122,39 @@ export function SettingsPage() {
   const handleToggleDevView = () => {
     if (isDevView) {
       setIsDevView(false);
+      setIsRevealed(false);
       setEnvError("");
     } else {
       const text = envVars.map((v) => `${v.key}=${v.value}`).join("\n");
       setBulkEnvText(text);
       setIsDevView(true);
+      setIsRevealed(false);
       setEnvError("");
+    }
+  };
+
+  const handleToggleReveal = async () => {
+    if (isRevealed) {
+      const text = envVars.map((v) => `${v.key}=${v.value}`).join("\n");
+      setBulkEnvText(text);
+      setIsRevealed(false);
+    } else {
+      setEnvLoading(true);
+      setEnvError("");
+      try {
+        const res = await fetch("/api/env?reveal=true", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error("Failed to load environment variables");
+        const data = await res.json();
+        const unmaskedText = (data.env ?? []).map((v: { key: string; value: string }) => `${v.key}=${v.value}`).join("\n");
+        setBulkEnvText(unmaskedText);
+        setIsRevealed(true);
+      } catch (err) {
+        setEnvError(err instanceof Error ? err.message : "Error loading environment variables");
+      } finally {
+        setEnvLoading(false);
+      }
     }
   };
 
@@ -175,6 +203,7 @@ export function SettingsPage() {
       const data = await res.json();
       setEnvVars(data.env ?? []);
       setIsDevView(false);
+      setIsRevealed(false);
     } catch (err) {
       setEnvError(err instanceof Error ? err.message : "Error saving environment variables");
     } finally {
@@ -446,9 +475,17 @@ export function SettingsPage() {
                       <span className="text-xs text-text-secondary font-medium font-mono">
                         .env Configuration
                       </span>
-                      <span className="text-[10px] bg-accent/10 text-accent font-semibold px-2 py-0.5 rounded-full select-none uppercase tracking-wider font-mono">
-                        Editor Mode
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={handleToggleReveal}
+                          className="text-[10px] bg-surface-hover hover:bg-surface-hover/80 text-text-secondary hover:text-text-primary font-semibold px-2 py-0.5 rounded-full select-none cursor-pointer font-mono"
+                        >
+                          {isRevealed ? "Hide Secrets" : "Reveal Secrets"}
+                        </button>
+                        <span className="text-[10px] bg-accent/10 text-accent font-semibold px-2 py-0.5 rounded-full select-none uppercase tracking-wider font-mono">
+                          Editor Mode
+                        </span>
+                      </div>
                     </div>
                     <textarea
                       value={bulkEnvText}
@@ -469,6 +506,7 @@ export function SettingsPage() {
                     <button
                       onClick={() => {
                         setIsDevView(false);
+                        setIsRevealed(false);
                         setEnvError("");
                       }}
                       className="px-4 py-2 text-xs text-text-secondary hover:text-text-primary font-semibold transition-colors cursor-pointer"

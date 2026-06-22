@@ -3,7 +3,11 @@ import { WorkspaceFileTree } from "./WorkspaceFileTree";
 import { WorkspaceFileEditor } from "./WorkspaceFileEditor";
 import type { FileInfo } from "shared";
 
-export function WorkspacePanel() {
+interface Props {
+  activeRepoName: string | null;
+}
+
+export function WorkspacePanel({ activeRepoName }: Props) {
   const [files, setFiles] = useState<FileInfo[]>([]);
   const [selectedFile, setSelectedFile] = useState<FileInfo | null>(null);
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
@@ -12,6 +16,12 @@ export function WorkspacePanel() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [addingRootType, setAddingRootType] = useState<"file" | "folder" | null>(null);
+
+  // Helper centralizado para construir las URLs con scoping de repositorio
+  const getWorkspaceUrl = useCallback((path: string) => {
+    const base = `/api/workspace/${path}`;
+    return activeRepoName ? `${base}?repo=${encodeURIComponent(activeRepoName)}` : base;
+  }, [activeRepoName]);
 
   // Helper for auth headers
   const getHeaders = useCallback(() => {
@@ -29,7 +39,7 @@ export function WorkspacePanel() {
       setError(null);
       try {
         const token = localStorage.getItem("token") || "";
-        const res = await fetch(`/api/workspace/${path}`, {
+        const res = await fetch(getWorkspaceUrl(path), {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -55,7 +65,7 @@ export function WorkspacePanel() {
         setLoading(false);
       }
     },
-    []
+    [getWorkspaceUrl]
   );
 
   // Initial load
@@ -66,7 +76,6 @@ export function WorkspacePanel() {
   // Full workspace reload (root + all expanded subdirectories)
   const reloadWorkspace = useCallback(async () => {
     await loadWorkspace("");
-    // Reload expanded subdirectories sequentially to refresh caches
     const paths = Array.from(expandedPaths);
     for (const path of paths) {
       await loadWorkspace(path);
@@ -80,6 +89,7 @@ export function WorkspacePanel() {
       window.removeEventListener("workspaceUpdated", reloadWorkspace);
     };
   }, [reloadWorkspace]);
+
   // Handle expanding/collapsing folders
   const handleToggleExpand = useCallback(
     async (path: string) => {
@@ -89,7 +99,6 @@ export function WorkspacePanel() {
           next.delete(path);
         } else {
           next.add(path);
-          // Load contents of directory if not loaded yet
           if (!pathContents[path]) {
             loadWorkspace(path);
           }
@@ -107,7 +116,7 @@ export function WorkspacePanel() {
       setError(null);
       try {
         const token = localStorage.getItem("token") || "";
-        const res = await fetch(`/api/workspace/${file.path}`, {
+        const res = await fetch(getWorkspaceUrl(file.path), {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -124,7 +133,7 @@ export function WorkspacePanel() {
         setLoading(false);
       }
     },
-    []
+    [getWorkspaceUrl]
   );
 
   // Listen for file-click events from Chat messages to open files in editor
@@ -133,7 +142,6 @@ export function WorkspacePanel() {
       const customEvt = e as CustomEvent<{ path: string }>;
       const targetPath = customEvt.detail.path;
       if (targetPath) {
-        // Expand parent directories if any
         if (targetPath.includes("/")) {
           const parts = targetPath.split("/");
           let current = "";
@@ -142,7 +150,6 @@ export function WorkspacePanel() {
             for (let i = 0; i < parts.length - 1; i++) {
               current = current ? `${current}/${parts[i]}` : parts[i];
               next.add(current);
-              // Load if not loaded yet
               if (!pathContents[current]) {
                 loadWorkspace(current);
               }
@@ -151,7 +158,6 @@ export function WorkspacePanel() {
           });
         }
 
-        // Open the file in editor
         handleSelectFile({
           name: targetPath.split("/").pop() || "",
           path: targetPath,
@@ -170,7 +176,7 @@ export function WorkspacePanel() {
   // Save modified text file content
   const handleSaveFile = useCallback(
     async (path: string, content: string) => {
-      const res = await fetch(`/api/workspace/${path}`, {
+      const res = await fetch(getWorkspaceUrl(path), {
         method: "PUT",
         headers: getHeaders(),
         body: JSON.stringify({ type: "file", content }),
@@ -179,11 +185,10 @@ export function WorkspacePanel() {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || "Save operation failed");
       }
-      // Re-fetch metadata of this file to sync states
       const data = await res.json();
       setSelectedFile(data);
     },
-    [getHeaders]
+    [getHeaders, getWorkspaceUrl]
   );
 
   // Create new file or folder
@@ -191,7 +196,7 @@ export function WorkspacePanel() {
     async (parentPath: string, name: string, type: "file" | "folder") => {
       const fullPath = parentPath ? `${parentPath}/${name}` : name;
       try {
-        const res = await fetch(`/api/workspace/${fullPath}`, {
+        const res = await fetch(getWorkspaceUrl(fullPath), {
           method: "PUT",
           headers: getHeaders(),
           body: JSON.stringify({ type }),
@@ -200,7 +205,6 @@ export function WorkspacePanel() {
           const data = await res.json().catch(() => ({}));
           throw new Error(data.error || "Failed to create resource");
         }
-        // Reload parent directory
         await loadWorkspace(parentPath);
         if (parentPath !== "") {
           setExpandedPaths((prev) => {
@@ -213,14 +217,14 @@ export function WorkspacePanel() {
         setError(err.message || "Create failed");
       }
     },
-    [getHeaders, loadWorkspace]
+    [getHeaders, loadWorkspace, getWorkspaceUrl]
   );
 
   // Rename file or folder
   const handleRename = useCallback(
     async (oldPath: string, newPath: string) => {
       try {
-        const res = await fetch(`/api/workspace/${oldPath}`, {
+        const res = await fetch(getWorkspaceUrl(oldPath), {
           method: "PATCH",
           headers: getHeaders(),
           body: JSON.stringify({ newPath }),
@@ -229,7 +233,6 @@ export function WorkspacePanel() {
           const data = await res.json().catch(() => ({}));
           throw new Error(data.error || "Failed to rename resource");
         }
-        // Refresh workspace
         const parentOfOld = oldPath.includes("/") ? oldPath.substring(0, oldPath.lastIndexOf("/")) : "";
         const parentOfNew = newPath.includes("/") ? newPath.substring(0, newPath.lastIndexOf("/")) : "";
         await loadWorkspace(parentOfOld);
@@ -244,7 +247,7 @@ export function WorkspacePanel() {
         setError(err.message || "Rename failed");
       }
     },
-    [getHeaders, selectedFile, loadWorkspace]
+    [getHeaders, selectedFile, loadWorkspace, getWorkspaceUrl]
   );
 
   // Delete file or folder
@@ -252,7 +255,7 @@ export function WorkspacePanel() {
     async (path: string) => {
       if (!confirm(`Are you sure you want to delete this ${path.split("/").pop()}?`)) return;
       try {
-        const res = await fetch(`/api/workspace/${path}`, {
+        const res = await fetch(getWorkspaceUrl(path), {
           method: "DELETE",
           headers: getHeaders(),
         });
@@ -260,7 +263,6 @@ export function WorkspacePanel() {
           const data = await res.json().catch(() => ({}));
           throw new Error(data.error || "Failed to delete resource");
         }
-        // Reload workspace
         const parentPath = path.includes("/") ? path.substring(0, path.lastIndexOf("/")) : "";
         await loadWorkspace(parentPath);
         if (selectedFile?.path === path) {
@@ -270,7 +272,7 @@ export function WorkspacePanel() {
         setError(err.message || "Delete failed");
       }
     },
-    [getHeaders, selectedFile, loadWorkspace]
+    [getHeaders, selectedFile, loadWorkspace, getWorkspaceUrl]
   );
 
   // Filter files based on search query recursively or at root level
@@ -389,7 +391,7 @@ export function WorkspacePanel() {
         </div>
 
         <div className="flex-1 min-w-0 overflow-hidden flex flex-col bg-bg h-full">
-          <WorkspaceFileEditor file={selectedFile} onSave={handleSaveFile} />
+          <WorkspaceFileEditor file={selectedFile} activeRepoName={activeRepoName} onSave={handleSaveFile} />
         </div>
       </div>
     </div>
