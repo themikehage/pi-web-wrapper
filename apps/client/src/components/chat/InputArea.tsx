@@ -3,24 +3,20 @@ import { ModelSelector } from "./ModelSelector";
 import { ToolsSelector } from "./ToolsSelector";
 import { SkillsSelector, type SkillInfo } from "./SkillsSelector";
 
+const DEFAULT_TOOLS = ["read", "write", "edit", "bash", "grep", "find", "ls"];
+
 interface Props {
   onSend: (message: string, option?: "steer" | "follow_up", tools?: string[]) => void;
   onAbort: () => void;
   streaming: boolean;
   sessionId: string | null;
+  onToolsChange?: (tools: string[]) => void;
 }
 
-export function InputArea({ onSend, onAbort, streaming, sessionId }: Props) {
+export function InputArea({ onSend, onAbort, streaming, sessionId, onToolsChange }: Props) {
   const [input, setInput] = useState("");
-  const [activeTools, setActiveTools] = useState<string[]>(() => {
-    if (!sessionId) return ["read", "write", "edit", "bash", "grep", "find", "ls"];
-    try {
-      const raw = localStorage.getItem(`pi-tools-${sessionId}`);
-      return raw ? JSON.parse(raw) : ["read", "write", "edit", "bash", "grep", "find", "ls"];
-    } catch {
-      return ["read", "write", "edit", "bash", "grep", "find", "ls"];
-    }
-  });
+  const [activeTools, setActiveTools] = useState<string[]>(DEFAULT_TOOLS);
+  const [toolsLoading, setToolsLoading] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
   const [skills, setSkills] = useState<SkillInfo[]>([]);
   const [skillsLoading, setSkillsLoading] = useState(false);
@@ -32,21 +28,29 @@ export function InputArea({ onSend, onAbort, streaming, sessionId }: Props) {
   const [selectedAutocompleteIndex, setSelectedAutocompleteIndex] = useState(0);
   const autocompleteRef = useRef<HTMLDivElement>(null);
 
-  // Sync tools when sessionId changes
   useEffect(() => {
-    if (!sessionId) return;
-    try {
-      const raw = localStorage.getItem(`pi-tools-${sessionId}`);
-      if (raw) {
-        setActiveTools(JSON.parse(raw));
-      } else {
-        const defaults = ["read", "write", "edit", "bash", "grep", "find", "ls"];
-        setActiveTools(defaults);
-        localStorage.setItem(`pi-tools-${sessionId}`, JSON.stringify(defaults));
-      }
-    } catch {
-      setActiveTools(["read", "write", "edit", "bash", "grep", "find", "ls"]);
+    if (!sessionId) {
+      setActiveTools(DEFAULT_TOOLS);
+      return;
     }
+    const fetchTools = async () => {
+      setToolsLoading(true);
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(`/api/sessions/${sessionId}/tools`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setActiveTools(data.tools ?? DEFAULT_TOOLS);
+        }
+      } catch {
+        setActiveTools(DEFAULT_TOOLS);
+      } finally {
+        setToolsLoading(false);
+      }
+    };
+    fetchTools();
   }, [sessionId]);
 
   // Fetch session skills when sessionId changes
@@ -195,10 +199,22 @@ export function InputArea({ onSend, onAbort, streaming, sessionId }: Props) {
     }
   };
 
-  const handleToolsChange = (tools: string[]) => {
+  const handleToolsChange = async (tools: string[]) => {
     setActiveTools(tools);
-    if (sessionId) {
-      localStorage.setItem(`pi-tools-${sessionId}`, JSON.stringify(tools));
+    onToolsChange?.(tools);
+    if (!sessionId) return;
+    try {
+      const token = localStorage.getItem("token");
+      await fetch(`/api/sessions/${sessionId}/tools`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ tools }),
+      });
+    } catch {
+      /* silent — tools still applied client-side for current prompt */
     }
   };
 

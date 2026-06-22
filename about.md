@@ -49,6 +49,14 @@
 - **Repo mode:** Agent CWD is `repos/{repoName}`. Sessions tagged with `repoName` in `metadata.json`. Sidebar and file explorer are scoped to the active repo.
 - Dashboard view (initial screen) lets users list, create or clone Git repositories.
 
+### Tool Permissions
+- Per-session tool access control: toggle `read`, `write`, `edit`, `bash`, `grep`, `find`, `ls`
+- Presets: **Full Access** (all 7 tools) and **Read-Only** (read, grep, find, ls only)
+- Tools persisted in session `metadata.json` — survive server restarts and session reopens
+- Applied immediately to live agent session via `session.setActiveToolsByName()`
+- Sandbox badge in chat header shows current mode (Read-Only / Full Access / N/7 Tools)
+- Tools also sent per-prompt via WebSocket for immediate override
+
 ## API Endpoints
 
 | Method | Path | Description |
@@ -68,6 +76,8 @@
 | GET | /api/workspace-repos | List repos in workspace/repos/ |
 | POST | /api/workspace-repos | Create empty repo or clone from Git URL |
 | GET/PUT/POST/DELETE/PATCH | /api/workspace/* | Workspace file operations (supports `?repo=name` scoping) |
+| GET | /api/sessions/:id/tools | Get active tool permissions for session |
+| POST | /api/sessions/:id/tools | Set and persist tool permissions for session |
 | WS | /ws | WebSocket for real-time streaming |
 | GET | /api/health | Health check |
 
@@ -84,7 +94,7 @@ packages/shared/  Shared Zod schemas and types
 - `routes/files.ts` — Workspace file CRUD API with `?repo=name` scoping and `/workspace-repos` endpoints for repo management.
 - `routes/providers.ts` — Dynamic provider configuration API
 - `routes/models.ts` — Model listing from SDK's modelRegistry.getAvailable()
-- `routes/sessions.ts` — Session CRUD with `repoName` binding
+- `routes/sessions.ts` — Session CRUD with `repoName` binding and tool permissions endpoints
 - `ws/handler.ts` — WebSocket auth via JWT, streaming via session.subscribe()
 - `middleware/auth.ts` — JWT verification middleware for REST routes
 

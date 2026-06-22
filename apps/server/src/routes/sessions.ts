@@ -4,7 +4,7 @@ import { z } from "zod";
 import { existsSync, readFileSync } from "node:fs";
 import { authMiddleware, getAuthPayload } from "../middleware/auth";
 import { piSessionManager } from "../pi/session-manager";
-import { CreateSessionSchema, PromptSchema, ModelSettingsSchema } from "shared";
+import { CreateSessionSchema, PromptSchema, ModelSettingsSchema, ToolPermissionsSchema } from "shared";
 
 const STORAGE_KEY = "pi-web-sessions";
 
@@ -196,5 +196,31 @@ sessionsRouter.get("/:id/skills", async (c) => {
   }
 });
 
+sessionsRouter.post(
+  "/:id/tools",
+  zValidator("json", ToolPermissionsSchema),
+  async (c) => {
+    const sessionId = c.req.param("id");
+    const { tools } = c.req.valid("json");
+    const { username } = getAuthPayload(c);
 
+    const session = piSessionManager.getSession(username, sessionId);
+    if (!session) {
+      return c.json({ error: "Session not found" }, 404);
+    }
+
+    session.setActiveToolsByName(tools);
+    piSessionManager.persistSessionTools(username, sessionId, tools);
+
+    return c.json({ success: true, tools });
+  }
+);
+
+sessionsRouter.get("/:id/tools", async (c) => {
+  const sessionId = c.req.param("id");
+  const { username } = getAuthPayload(c);
+
+  const tools = piSessionManager.getSessionTools(username, sessionId);
+  return c.json({ tools });
+});
 

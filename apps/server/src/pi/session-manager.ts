@@ -11,6 +11,7 @@ import {
 } from "@earendil-works/pi-coding-agent";
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve, dirname } from "node:path";
+import { AVAILABLE_TOOLS } from "shared";
 
 export function getResolvedSkillPaths(cwd: string): string[] {
   const paths: string[] = [];
@@ -161,13 +162,18 @@ class PiSessionManager {
     // Persistir metadatos de sesión (guardar y leer metadata.json con repoName)
     const metadataPath = join(sessionDir, "metadata.json");
     let resolvedRepoName = repoName;
+    let persistedTools: string[] | undefined;
 
     if (repoName) {
-      writeFileSync(metadataPath, JSON.stringify({ repoName }, null, 2), "utf-8");
+      const existing = existsSync(metadataPath)
+        ? (() => { try { return JSON.parse(readFileSync(metadataPath, "utf-8")); } catch { return {}; } })()
+        : {};
+      writeFileSync(metadataPath, JSON.stringify({ ...existing, repoName }, null, 2), "utf-8");
     } else if (existsSync(metadataPath)) {
       try {
         const metadata = JSON.parse(readFileSync(metadataPath, "utf-8"));
         resolvedRepoName = metadata.repoName;
+        persistedTools = Array.isArray(metadata.tools) ? metadata.tools : undefined;
       } catch (e) {
         console.error(`Failed to read metadata.json for session ${sessionId}:`, e);
       }
@@ -244,6 +250,10 @@ class PiSessionManager {
       customTools: [customBashTool],
     });
 
+    if (persistedTools) {
+      session.setActiveToolsByName(persistedTools);
+    }
+
     const unsubscribe = session.subscribe(() => {});
 
     this.sessions.set(key, {
@@ -307,6 +317,30 @@ class PiSessionManager {
       this.sessions.delete(key);
     }
   }
+
+  persistSessionTools(username: string, sessionId: string, tools: string[]): void {
+    const userDir = this.ensureUserDir(username);
+    const metadataPath = join(userDir, "sessions", sessionId, "metadata.json");
+    let metadata: Record<string, unknown> = {};
+    if (existsSync(metadataPath)) {
+      try { metadata = JSON.parse(readFileSync(metadataPath, "utf-8")); } catch {}
+    }
+    metadata.tools = tools;
+    writeFileSync(metadataPath, JSON.stringify(metadata, null, 2), "utf-8");
+  }
+
+  getSessionTools(username: string, sessionId: string): string[] {
+    const userDir = this.ensureUserDir(username);
+    const metadataPath = join(userDir, "sessions", sessionId, "metadata.json");
+    if (!existsSync(metadataPath)) return [...AVAILABLE_TOOLS];
+    try {
+      const metadata = JSON.parse(readFileSync(metadataPath, "utf-8"));
+      return Array.isArray(metadata.tools) ? metadata.tools : [...AVAILABLE_TOOLS];
+    } catch {
+      return [...AVAILABLE_TOOLS];
+    }
+  }
+
 
   async destroyAllSessions(username: string): Promise<void> {
     const prefix = `${username}:`;

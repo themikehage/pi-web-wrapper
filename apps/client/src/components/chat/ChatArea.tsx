@@ -3,6 +3,17 @@ import { useWebSocket } from "@/hooks/useWebSocket";
 import { MessageList } from "./MessageList";
 import { InputArea } from "./InputArea";
 
+const ALL_TOOL_NAMES = ["read", "write", "edit", "bash", "grep", "find", "ls"];
+
+function getSandboxLabel(tools: string[]): { label: string; color: string } {
+  const hasWrite = tools.includes("write") || tools.includes("edit") || tools.includes("bash");
+  const hasRead = tools.includes("read") || tools.includes("grep") || tools.includes("find") || tools.includes("ls");
+  if (tools.length === 0) return { label: "No Tools", color: "text-error" };
+  if (!hasWrite && hasRead) return { label: "Read-Only", color: "text-warning" };
+  if (tools.length === ALL_TOOL_NAMES.length) return { label: "Full Access", color: "text-success" };
+  return { label: `${tools.length}/${ALL_TOOL_NAMES.length} Tools`, color: "text-accent" };
+}
+
 interface MessageUsage {
   input: number;
   output: number;
@@ -44,6 +55,7 @@ export function ChatArea({ sessionId }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [streaming, setStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sandboxTools, setSandboxTools] = useState<string[]>(ALL_TOOL_NAMES);
   const { connected, send, subscribe } = useWebSocket(sessionId);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const firstMessageSentRef = useRef(false);
@@ -79,6 +91,20 @@ export function ChatArea({ sessionId }: Props) {
 
     loadMessages();
     firstMessageSentRef.current = false;
+
+    const fetchTools = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(`/api/sessions/${sessionId}/tools`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setSandboxTools(data.tools ?? ALL_TOOL_NAMES);
+        }
+      } catch {}
+    };
+    fetchTools();
 
     const unsubStart = subscribe("agent_start", () => {
       setStreaming(true);
@@ -221,6 +247,11 @@ export function ChatArea({ sessionId }: Props) {
         />
         {connected ? "Connected" : "Reconnecting..."}
         {streaming && <span className="ml-2 text-accent">Streaming...</span>}
+        <span className="ml-auto">
+          <span className={`font-medium ${getSandboxLabel(sandboxTools).color}`}>
+            {getSandboxLabel(sandboxTools).label}
+          </span>
+        </span>
       </div>
       {error && (
         <div className="px-3 sm:px-4 py-2 bg-error/10 border-b border-error/20 text-error text-xs">
@@ -239,6 +270,7 @@ export function ChatArea({ sessionId }: Props) {
         onAbort={handleAbort}
         streaming={streaming}
         sessionId={sessionId}
+        onToolsChange={setSandboxTools}
       />
     </div>
   );

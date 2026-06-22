@@ -29,6 +29,14 @@ export const ModelSettingsSchema = z.object({
   thinkingLevel: z.enum(["off", "minimal", "low", "medium", "high", "xhigh"]),
 });
 
+export const AVAILABLE_TOOLS = ["read", "write", "edit", "bash", "grep", "find", "ls"] as const;
+export type ToolName = typeof AVAILABLE_TOOLS[number];
+
+export const ToolPermissionsSchema = z.object({
+  tools: z.array(z.enum(AVAILABLE_TOOLS)),
+});
+export type ToolPermissions = z.infer<typeof ToolPermissionsSchema>;
+
 export const SetApiKeySchema = z.object({
   apiKey: z.string().min(1),
 });
@@ -45,6 +53,7 @@ export type CreateSession = z.infer<typeof CreateSessionSchema>;
 export type ModelSettings = z.infer<typeof ModelSettingsSchema>;
 export type SetApiKey = z.infer<typeof SetApiKeySchema>;
 export type SetEnvVar = z.infer<typeof SetEnvVarSchema>;
+export type { ToolPermissions };
 
 export interface FileInfo {
   name: string;

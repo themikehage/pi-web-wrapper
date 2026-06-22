@@ -86,3 +86,16 @@
 ## Proximas ideas:
 - Sistema de prompts para que el agente pueda interactuar con la api del backend y auto usarse
 
+---
+
+## Phase 13: Tool Permissions (Server-Persisted)
+- [x] 13.1 Shared schema: `ToolPermissionsSchema` + `AVAILABLE_TOOLS` constant in `packages/shared`
+- [x] 13.2 Session manager: `persistSessionTools()` + `getSessionTools()` methods, persists to `metadata.json`
+- [x] 13.3 Session manager: loads persisted tools on session creation and applies via `setActiveToolsByName()`
+- [x] 13.4 Session manager: preserves existing metadata fields when writing (no data loss)
+- [x] 13.5 API: `GET /api/sessions/:id/tools` — returns active tools for session (defaults to full access)
+- [x] 13.6 API: `POST /api/sessions/:id/tools` — sets and persists tools, applies immediately to live session
+- [x] 13.7 Client: `InputArea` fetches tools from server on session change (replaces localStorage-only)
+- [x] 13.8 Client: `InputArea` persists tool changes via `POST /api/sessions/:id/tools`
+- [x] 13.9 Client: `InputArea` exposes `onToolsChange` prop for real-time parent updates
+- [x] 13.10 Client: `ChatArea` displays sandbox status badge in header (Read-Only / Full Access / N/7 Tools)
