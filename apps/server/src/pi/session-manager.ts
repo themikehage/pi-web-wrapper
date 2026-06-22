@@ -110,7 +110,7 @@ class PiSessionManager {
 
     const { authStorage, modelRegistry } = this.getUserContext(username);
 
-    const skillPaths = getResolvedSkillPaths(process.cwd());
+    const skillPaths = getResolvedSkillPaths(workspaceDir);
     const resourceLoader = new DefaultResourceLoader({
       cwd: workspaceDir,
       agentDir: userDir,

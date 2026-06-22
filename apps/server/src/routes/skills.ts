@@ -12,9 +12,10 @@ skillsRouter.get("/", async (c) => {
   const { username } = getAuthPayload(c);
 
   try {
-    const skillPaths = getResolvedSkillPaths(process.cwd());
+    const workspaceDir = `/tmp/pi-web-users/${username}/workspace`;
+    const skillPaths = getResolvedSkillPaths(workspaceDir);
     const result = loadSkills({
-      cwd: process.cwd(),
+      cwd: workspaceDir,
       agentDir: `/tmp/pi-web-users/${username}`,
       skillPaths,
       includeDefaults: true,

@@ -48,6 +48,18 @@ export function SessionSidebar({ activeSessionId, onSelectSession, onNewSession 
     }
   }, [sessions.length, onNewSession]);
 
+
+  useEffect(() => {
+    const handleRename = (e: Event) => {
+      const { sessionId, name } = (e as CustomEvent<{ sessionId: string; name: string }>).detail;
+      setSessions((prev) =>
+        prev.map((s) => (s.id === sessionId ? { ...s, name } : s))
+      );
+    };
+    window.addEventListener("renameSession", handleRename);
+    return () => window.removeEventListener("renameSession", handleRename);
+  }, []);
+
   const deleteSession = useCallback(
     async (id: string) => {
       const token = localStorage.getItem("token");

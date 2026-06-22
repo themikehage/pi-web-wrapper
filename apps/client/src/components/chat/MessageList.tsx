@@ -1,8 +1,9 @@
-import { type FC } from "react";
+import { type FC, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import clsx from "clsx";
 import { RichMarkdown } from "./RichMarkdown";
-import { ToolResultInspector, isHtml, extractFileMarkers, HtmlFileFetcher } from "./ToolResultInspector";
+import { ToolCallRow, type ToolResultData } from "./tools/ToolCallRow";
+import { extractFileMarkers, isHtml, HtmlFileFetcher } from "./ToolResultInspector";
 import { HtmlPreview } from "./HtmlPreview";
 import { ImageGrid } from "./ImageGrid";
 
@@ -10,8 +11,12 @@ interface ContentBlock {
   type: string;
   text?: string;
   thinking?: string;
+  thinkingSignature?: string;
   name?: string;
+  id?: string;
   arguments?: Record<string, unknown>;
+  data?: string;
+  mimeType?: string;
   image?: { url: string; title?: string };
 }
 
@@ -34,6 +39,7 @@ interface Message {
   role: string;
   content: string | ContentBlock[] | ContentBlock;
   toolName?: string;
+  toolCallId?: string;
   isError?: boolean;
   isStreaming?: boolean;
   api?: string;
@@ -46,6 +52,11 @@ interface Message {
   id?: string;
   parentId?: string | null;
   siblings?: string[];
+  details?: {
+    diff?: string;
+    patch?: string;
+    firstChangedLine?: number;
+  };
 }
 
 interface Props {
@@ -54,222 +65,259 @@ interface Props {
   sessionId: string | null;
 }
 
-function renderBlock(block: ContentBlock | string | unknown, i: number, sessionId: string | null) {
-  if (typeof block === "string") {
-    return <RichMarkdown key={i} content={block} />;
-  }
+type RenderGroup =
+  | { type: "user"; msg: Message }
+  | { type: "agent"; messages: Message[] };
 
-  if (block && typeof block === "object") {
-    const b = block as ContentBlock;
-    if (b.type === "text" && b.text) {
-      return <RichMarkdown key={i} content={b.text} />;
+function buildGroups(messages: Message[]): RenderGroup[] {
+  const groups: RenderGroup[] = [];
+  let agentBuf: Message[] = [];
+
+  const flush = () => {
+    if (agentBuf.length > 0) {
+      groups.push({ type: "agent", messages: agentBuf });
+      agentBuf = [];
     }
-    if (b.type === "thinking" && b.thinking) {
-      return (
-        <details key={i} className="mb-2 bg-[#171717]/40 border border-surface-hover/30 rounded-md p-2 font-sans">
-          <summary className="text-text-secondary text-xs cursor-pointer hover:text-text-primary transition-colors select-none font-semibold">
-            Thinking process...
-          </summary>
-          <div className="mt-2 text-text-secondary/70 text-xs whitespace-pre-wrap border-l-2 border-accent/40 pl-3 font-mono leading-relaxed">
-            {b.thinking}
-          </div>
-        </details>
-      );
-    }
-    if (b.type === "toolCall" && b.name) {
-      return (
-        <ToolResultInspector
-          key={i}
-          toolName={b.name}
-          args={b.arguments}
-          result={undefined}
-          sessionId={sessionId}
-        />
-      );
-    }
-    if (b.type === "image" && b.image) {
-      return <ImageGrid key={i} images={[b.image]} sessionId={sessionId} />;
+  };
+
+  for (const msg of messages) {
+    if (msg.role === "user") {
+      flush();
+      groups.push({ type: "user", msg });
+    } else {
+      agentBuf.push(msg);
     }
   }
+  flush();
+  return groups;
+}
 
+function ThinkingBlock({ thinking }: { thinking: string }) {
+  const [open, setOpen] = useState(false);
   return (
-    <pre key={i} className="text-xs overflow-x-auto text-error font-mono bg-error/5 p-2 rounded">
-      {JSON.stringify(block, null, 2)}
-    </pre>
+    <div className="my-1.5">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1.5 text-[11px] text-text-secondary/50 hover:text-text-secondary transition-colors cursor-pointer select-none"
+      >
+        <svg width="11" height="11" viewBox="0 0 20 20" fill="currentColor" className="flex-shrink-0">
+          <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+        </svg>
+        <span className="font-sans">{open ? "Hide" : "Show"} reasoning</span>
+        <svg width="9" height="9" viewBox="0 0 20 20" fill="currentColor" className={`transition-transform ${open ? "rotate-180" : ""}`}>
+          <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+        </svg>
+      </button>
+      {open && (
+        <div className="mt-1.5 pl-4 border-l-2 border-accent/20 text-[11px] text-text-secondary/60 font-mono whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto">
+          {thinking}
+        </div>
+      )}
+    </div>
   );
 }
 
-function renderContent(msg: Message, sessionId: string | null) {
-  const content = msg.content;
-
-  if (msg.toolName) {
-    return (
-      <ToolResultInspector
-        toolName={msg.toolName}
-        result={content}
-        sessionId={sessionId}
-      />
-    );
-  }
-
-  if (typeof content === "string") {
-    if (msg.role === "user") {
-      return <p className="whitespace-pre-wrap break-words font-sans">{content}</p>;
-    }
-
-    const htmlOutput = isHtml(content) ? content : null;
-    const markers = extractFileMarkers(content);
-    const imageMarkers = markers.filter((m) => m.type === "image");
-    const htmlMarkers = markers.filter((m) => m.type === "html");
-
-    if (htmlOutput || markers.length > 0) {
-      return (
-        <div className="space-y-3">
-          {htmlOutput && <HtmlPreview html={htmlOutput} />}
-          {htmlMarkers.map((m, i) => (
-            <HtmlFileFetcher key={`html-${i}`} url={m.url} title={m.title} sessionId={sessionId} />
-          ))}
-          {imageMarkers.length > 0 && (
-            <ImageGrid
-              images={imageMarkers.map((m) => ({ url: m.url, title: m.title }))}
-              sessionId={sessionId}
-            />
-          )}
-          {!htmlOutput && <RichMarkdown content={content} />}
-        </div>
-      );
-    }
-
-    return <RichMarkdown content={content} />;
-  }
-
-  if (Array.isArray(content)) {
-    return content.map((block, i) => renderBlock(block, i, sessionId));
-  }
-
-  if (content && typeof content === "object") {
-    return renderBlock(content as ContentBlock, 0, sessionId);
-  }
-
-  return null;
+function BranchNav({ msg, onNavigate }: { msg: Message; onNavigate?: (id: string) => void }) {
+  if (!msg.siblings || msg.siblings.length <= 1 || !msg.id || !onNavigate) return null;
+  const idx = msg.siblings.indexOf(msg.id);
+  return (
+    <div className={clsx(
+      "flex items-center gap-1.5 mt-2 pt-1.5 border-t select-none text-[10px] font-mono",
+      msg.role === "user" ? "border-bg/10 text-bg/60" : "border-surface-hover/30 text-text-secondary/40"
+    )}>
+      <button
+        onClick={() => { const i = msg.siblings!.indexOf(msg.id!); if (i > 0) onNavigate(msg.siblings![i - 1]); }}
+        disabled={idx === 0}
+        className={clsx("p-0.5 rounded transition-colors cursor-pointer", idx > 0 ? (msg.role === "user" ? "hover:bg-bg/10 hover:text-bg text-bg/80" : "hover:bg-surface-hover hover:text-text-primary text-text-secondary/80") : "opacity-30 cursor-not-allowed")}
+        title="Previous version"
+      >←</button>
+      <span>{idx + 1} / {msg.siblings.length}</span>
+      <button
+        onClick={() => { const i = msg.siblings!.indexOf(msg.id!); if (i < msg.siblings!.length - 1) onNavigate(msg.siblings![i + 1]); }}
+        disabled={idx === msg.siblings.length - 1}
+        className={clsx("p-0.5 rounded transition-colors cursor-pointer", idx < msg.siblings.length - 1 ? (msg.role === "user" ? "hover:bg-bg/10 hover:text-bg text-bg/80" : "hover:bg-surface-hover hover:text-text-primary text-text-secondary/80") : "opacity-30 cursor-not-allowed")}
+        title="Next version"
+      >→</button>
+    </div>
+  );
 }
 
-export const MessageList: FC<Props> = ({ messages, onNavigate, sessionId }) => {
-  if (messages.length === 0) {
+function AssistantTextBlock({ text, sessionId }: { text: string; sessionId: string | null }) {
+  const htmlOutput = isHtml(text) ? text : null;
+  const markers = extractFileMarkers(text);
+  const imageMarkers = markers.filter(m => m.type === "image");
+  const htmlMarkers = markers.filter(m => m.type === "html");
+
+  if (htmlOutput || markers.length > 0) {
     return (
-      <div className="flex items-center justify-center h-64 text-text-secondary text-sm font-sans">
-        Send a message to start
+      <div className="space-y-3">
+        {htmlOutput && <HtmlPreview html={htmlOutput} />}
+        {htmlMarkers.map((m, i) => (
+          <HtmlFileFetcher key={`html-${i}`} url={m.url} title={m.title} sessionId={sessionId} />
+        ))}
+        {imageMarkers.length > 0 && (
+          <ImageGrid images={imageMarkers.map(m => ({ url: m.url, title: m.title }))} sessionId={sessionId} />
+        )}
+        {!htmlOutput && <RichMarkdown content={text} />}
       </div>
     );
   }
+  return <RichMarkdown content={text} />;
+}
+
+function AgentTurn({
+  messages,
+  sessionId,
+  onNavigate,
+}: {
+  messages: Message[];
+  sessionId: string | null;
+  onNavigate?: (id: string) => void;
+}) {
+  const toolResultMap = new Map<string, Message>();
+  for (const m of messages) {
+    if (m.role === "toolResult" && m.toolCallId) {
+      toolResultMap.set(m.toolCallId, m);
+    }
+  }
+
+  const assistantMessages = messages.filter(m => m.role === "assistant");
+  const lastAssistant = assistantMessages[assistantMessages.length - 1];
 
   return (
-    <div className="space-y-6">
-      <AnimatePresence>
-        {messages.map((msg, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={clsx(
-              "flex gap-3",
-              msg.role === "user" ? "justify-end" : "justify-start"
-            )}
-          >
-            <div
-              className={clsx(
-                "max-w-[90%] sm:max-w-[85%] rounded-lg px-3 sm:px-4 py-2 sm:py-3 shadow-sm",
-                msg.role === "user"
-                  ? "bg-accent text-bg"
-                  : msg.toolName
-                    ? "bg-surface border border-warning/30"
-                    : "bg-surface",
-                msg.isError && "border border-error/50"
+    <div className="flex gap-3 justify-start">
+      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-surface border border-surface-hover flex items-center justify-center mt-0.5">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-accent">
+          <path d="M4 17L10 11L4 5" />
+          <path d="M12 19H20" />
+        </svg>
+      </div>
+
+      <div className="flex-1 min-w-0 space-y-0.5">
+        {assistantMessages.map((msg, msgIdx) => {
+          const blocks = Array.isArray(msg.content) ? msg.content : [];
+          const isLast = msgIdx === assistantMessages.length - 1;
+          const isStreaming = !!msg.isStreaming;
+
+          return (
+            <div key={msgIdx}>
+              {blocks.map((block, i) => {
+                if (block.type === "thinking" && block.thinking) {
+                  return <ThinkingBlock key={i} thinking={block.thinking} />;
+                }
+                if (block.type === "text" && block.text) {
+                  return (
+                    <div key={i} className="text-text-primary text-sm leading-relaxed">
+                      <AssistantTextBlock text={block.text} sessionId={sessionId} />
+                    </div>
+                  );
+                }
+                if (block.type === "toolCall" && block.name && block.id) {
+                  const matchedResult = toolResultMap.get(block.id);
+                  const resultData: ToolResultData | null = matchedResult
+                    ? {
+                        toolName: matchedResult.toolName ?? block.name,
+                        content: Array.isArray(matchedResult.content)
+                          ? (matchedResult.content as Array<{ type: string; text?: string; data?: string; mimeType?: string }>)
+                          : [{ type: "text", text: String(matchedResult.content) }],
+                        isError: matchedResult.isError ?? false,
+                        details: matchedResult.details,
+                      }
+                    : null;
+
+                  return (
+                    <ToolCallRow
+                      key={i}
+                      toolName={block.name}
+                      args={block.arguments ?? {}}
+                      result={resultData}
+                      sessionId={sessionId}
+                    />
+                  );
+                }
+                return null;
+              })}
+
+              {isLast && isStreaming && (
+                <span className="inline-block w-2 h-4 ml-1 bg-accent animate-pulse rounded-sm" />
               )}
-            >
-              <div className={clsx(msg.role === "user" ? "text-inherit" : "text-text-primary")}>
-                {renderContent(msg, sessionId)}
-              </div>
-              {msg.role === "assistant" && (msg.provider || msg.model || msg.usage) && (
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-2 pt-1.5 border-t border-surface-hover/30 text-[10px] text-text-secondary/50 font-mono">
-                  {msg.provider && (
-                    <span>
-                      provider: <span className="text-text-secondary/80">{msg.provider}</span>
-                    </span>
-                  )}
-                  {msg.model && (
-                    <span>
-                      • model: <span className="text-text-secondary/80">{msg.model}</span>
-                    </span>
-                  )}
+
+              {isLast && (msg.provider || msg.model || msg.usage) && !isStreaming && (
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-2 text-[10px] text-text-secondary/40 font-mono">
+                  {msg.provider && <span>provider: <span className="text-text-secondary/60">{msg.provider}</span></span>}
+                  {msg.model && <span>• model: <span className="text-text-secondary/60">{msg.model}</span></span>}
                   {msg.usage && (
                     <>
-                      <span>
-                        • tokens: <span className="text-text-secondary/80">{msg.usage.totalTokens || (msg.usage.input + msg.usage.output)}</span>
-                      </span>
+                      <span>• tokens: <span className="text-text-secondary/60">{msg.usage.totalTokens ?? (msg.usage.input + msg.usage.output)}</span></span>
                       {msg.usage.cost?.total !== undefined && (
-                        <span>
-                          • cost: <span className="text-text-secondary/80">${msg.usage.cost.total.toFixed(6)}</span>
-                        </span>
+                        <span>• cost: <span className="text-text-secondary/60">${msg.usage.cost.total.toFixed(6)}</span></span>
                       )}
                     </>
                   )}
                 </div>
               )}
-              {msg.isStreaming && (
-                <span className="inline-block w-2 h-4 ml-1 bg-accent animate-pulse" />
-              )}
-              {msg.siblings && msg.siblings.length > 1 && msg.id && onNavigate && (
-                <div
-                  className={clsx(
-                    "flex items-center gap-1.5 mt-2 pt-1.5 border-t select-none text-[10px] font-mono",
-                    msg.role === "user"
-                      ? "border-bg/10 text-bg/60"
-                      : "border-surface-hover/30 text-text-secondary/40"
-                  )}
-                >
-                  <button
-                    onClick={() => {
-                      const idx = msg.siblings!.indexOf(msg.id!);
-                      if (idx > 0) onNavigate(msg.siblings![idx - 1]);
-                    }}
-                    disabled={msg.siblings.indexOf(msg.id) === 0}
-                    className={clsx(
-                      "p-0.5 rounded transition-colors cursor-pointer",
-                      msg.siblings.indexOf(msg.id) > 0
-                        ? msg.role === "user"
-                          ? "hover:bg-bg/10 hover:text-bg text-bg/80"
-                          : "hover:bg-surface-hover hover:text-text-primary text-text-secondary/80"
-                        : "opacity-30 cursor-not-allowed"
-                    )}
-                    title="Previous version"
-                  >
-                    ←
-                  </button>
-                  <span>
-                    {msg.siblings.indexOf(msg.id) + 1} / {msg.siblings.length}
-                  </span>
-                  <button
-                    onClick={() => {
-                      const idx = msg.siblings!.indexOf(msg.id!);
-                      if (idx < msg.siblings!.length - 1) onNavigate(msg.siblings![idx + 1]);
-                    }}
-                    disabled={msg.siblings.indexOf(msg.id) === msg.siblings.length - 1}
-                    className={clsx(
-                      "p-0.5 rounded transition-colors cursor-pointer",
-                      msg.siblings.indexOf(msg.id) < msg.siblings.length - 1
-                        ? msg.role === "user"
-                          ? "hover:bg-bg/10 hover:text-bg text-bg/80"
-                          : "hover:bg-surface-hover hover:text-text-primary text-text-secondary/80"
-                        : "opacity-30 cursor-not-allowed"
-                    )}
-                    title="Next version"
-                  >
-                    →
-                  </button>
-                </div>
-              )}
             </div>
+          );
+        })}
+
+        {lastAssistant && <BranchNav msg={lastAssistant} onNavigate={onNavigate} />}
+      </div>
+    </div>
+  );
+}
+
+function UserBubble({ msg, onNavigate }: { msg: Message; onNavigate?: (id: string) => void }) {
+  const text = typeof msg.content === "string"
+    ? msg.content
+    : Array.isArray(msg.content)
+    ? (msg.content as ContentBlock[]).map(b => b.text ?? "").join(" ")
+    : "";
+
+  return (
+    <div className="flex gap-3 justify-end">
+      <div className="max-w-[80%] sm:max-w-[75%]">
+        <div className="bg-accent text-bg rounded-2xl rounded-tr-md px-4 py-2.5 shadow-sm">
+          <p className="text-sm leading-relaxed whitespace-pre-wrap break-words font-sans">{text}</p>
+          {msg.isError && (
+            <div className="mt-1.5 text-xs text-bg/60">Error sending message</div>
+          )}
+        </div>
+        <BranchNav msg={msg} onNavigate={onNavigate} />
+      </div>
+    </div>
+  );
+}
+
+export const MessageList: FC<Props> = ({ messages, onNavigate, sessionId }) => {
+  if (messages.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 gap-3 text-text-secondary">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-30">
+          <path d="M4 17L10 11L4 5" />
+          <path d="M12 19H20" />
+        </svg>
+        <p className="text-sm font-sans">Send a message to start</p>
+      </div>
+    );
+  }
+
+  const groups = buildGroups(messages);
+
+  return (
+    <div className="space-y-4">
+      <AnimatePresence>
+        {groups.map((group, i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.15 }}
+          >
+            {group.type === "user" ? (
+              <UserBubble msg={group.msg} onNavigate={onNavigate} />
+            ) : (
+              <AgentTurn messages={group.messages} sessionId={sessionId} onNavigate={onNavigate} />
+            )}
           </motion.div>
         ))}
       </AnimatePresence>

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, type KeyboardEvent } from "react";
 import { ModelSelector } from "./ModelSelector";
 import { ToolsSelector } from "./ToolsSelector";
-import { SkillsSelector } from "./SkillsSelector";
+import { SkillsSelector, type SkillInfo } from "./SkillsSelector";
 
 interface Props {
   onSend: (message: string, option?: "steer" | "follow_up", tools?: string[]) => void;
@@ -22,10 +22,15 @@ export function InputArea({ onSend, onAbort, streaming, sessionId }: Props) {
     }
   });
   const [showOptions, setShowOptions] = useState(false);
-  const [skills, setSkills] = useState<any[]>([]);
+  const [skills, setSkills] = useState<SkillInfo[]>([]);
   const [skillsLoading, setSkillsLoading] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const optionsRef = useRef<HTMLDivElement>(null);
+
+  const [showAutocomplete, setShowAutocomplete] = useState(false);
+  const [autocompleteSearch, setAutocompleteSearch] = useState("");
+  const [selectedAutocompleteIndex, setSelectedAutocompleteIndex] = useState(0);
+  const autocompleteRef = useRef<HTMLDivElement>(null);
 
   // Sync tools when sessionId changes
   useEffect(() => {
@@ -90,6 +95,61 @@ export function InputArea({ onSend, onAbort, streaming, sessionId }: Props) {
     el.style.height = Math.min(el.scrollHeight, 200) + "px";
   }, [input]);
 
+  const filteredSkillsForAutocomplete = skills.filter((s) =>
+    s.name.toLowerCase().includes(autocompleteSearch.toLowerCase())
+  );
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (
+        autocompleteRef.current &&
+        !autocompleteRef.current.contains(e.target as Node) &&
+        textareaRef.current &&
+        !textareaRef.current.contains(e.target as Node)
+      ) {
+        setShowAutocomplete(false);
+      }
+    };
+    if (showAutocomplete) {
+      document.addEventListener("mousedown", handleClick);
+      return () => document.removeEventListener("mousedown", handleClick);
+    }
+  }, [showAutocomplete]);
+
+  const checkAutocomplete = (text: string, cursorPosition: number) => {
+    const textBeforeCursor = text.slice(0, cursorPosition);
+    const lastWordMatch = textBeforeCursor.match(/(\/\S*)$/);
+
+    if (lastWordMatch) {
+      const triggerWord = lastWordMatch[1];
+      setAutocompleteSearch(triggerWord.slice(1));
+      setShowAutocomplete(true);
+      setSelectedAutocompleteIndex(0);
+    } else {
+      setShowAutocomplete(false);
+    }
+  };
+
+  const insertSkillReference = (skillName: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const cursorPosition = textarea.selectionStart;
+    const textBeforeCursor = input.slice(0, cursorPosition);
+    const textAfterCursor = input.slice(cursorPosition);
+
+    const textBeforeCursorReplaced = textBeforeCursor.replace(/(\/\S*)$/, `/${skillName} `);
+    const newVal = textBeforeCursorReplaced + textAfterCursor;
+    setInput(newVal);
+    setShowAutocomplete(false);
+
+    const newCursorPos = textBeforeCursorReplaced.length;
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+    }, 0);
+  };
+
   const handleSend = (option?: "steer" | "follow_up") => {
     if (!input.trim()) return;
     onSend(input, option, activeTools);
@@ -97,6 +157,29 @@ export function InputArea({ onSend, onAbort, streaming, sessionId }: Props) {
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (showAutocomplete && filteredSkillsForAutocomplete.length > 0) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setSelectedAutocompleteIndex((prev) => (prev + 1) % filteredSkillsForAutocomplete.length);
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setSelectedAutocompleteIndex((prev) => (prev - 1 + filteredSkillsForAutocomplete.length) % filteredSkillsForAutocomplete.length);
+        return;
+      }
+      if (e.key === "Enter") {
+        e.preventDefault();
+        insertSkillReference(filteredSkillsForAutocomplete[selectedAutocompleteIndex].name);
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setShowAutocomplete(false);
+        return;
+      }
+    }
+
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       if (streaming) {
@@ -121,11 +204,42 @@ export function InputArea({ onSend, onAbort, streaming, sessionId }: Props) {
 
   return (
     <div className="border-t border-surface p-3 sm:p-4 bg-bg">
-      <div className="max-w-3xl mx-auto flex gap-2 sm:gap-3">
+      <div className="max-w-3xl mx-auto flex gap-2 sm:gap-3 relative">
+        {showAutocomplete && filteredSkillsForAutocomplete.length > 0 && (
+          <div
+            ref={autocompleteRef}
+            className="absolute bottom-full left-0 mb-1.5 w-64 bg-surface border border-surface-hover rounded-lg shadow-xl z-50 overflow-hidden text-xs max-h-48 overflow-y-auto"
+          >
+            {filteredSkillsForAutocomplete.map((s, idx) => (
+              <button
+                key={s.name}
+                onClick={() => insertSkillReference(s.name)}
+                className={`w-full text-left px-3 py-2 flex flex-col gap-0.5 cursor-pointer transition-colors ${
+                  idx === selectedAutocompleteIndex ? "bg-surface-hover text-text-primary" : "text-text-secondary hover:bg-surface-hover/50 hover:text-text-primary"
+                }`}
+              >
+                <span className="font-mono font-bold text-text-primary">{`/${s.name}`}</span>
+                <span className="text-[10px] text-text-secondary truncate max-w-full">{s.description}</span>
+              </button>
+            ))}
+          </div>
+        )}
         <textarea
           ref={textareaRef}
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(e) => {
+            const val = e.target.value;
+            setInput(val);
+            checkAutocomplete(val, e.target.selectionStart);
+          }}
+          onKeyUp={(e) => {
+            const target = e.currentTarget;
+            checkAutocomplete(target.value, target.selectionStart);
+          }}
+          onClick={(e) => {
+            const target = e.currentTarget;
+            checkAutocomplete(target.value, target.selectionStart);
+          }}
           onKeyDown={handleKeyDown}
           placeholder={
             streaming
@@ -196,7 +310,31 @@ export function InputArea({ onSend, onAbort, streaming, sessionId }: Props) {
         <ModelSelector sessionId={sessionId} />
         <div className="flex items-center gap-3">
           {sessionId && (
-            <SkillsSelector skills={skills} loading={skillsLoading} />
+            <SkillsSelector
+              skills={skills}
+              loading={skillsLoading}
+              onSelectSkill={(skillName) => {
+                const textarea = textareaRef.current;
+                if (!textarea) return;
+
+                const cursorPosition = textarea.selectionStart;
+                const textBeforeCursor = input.slice(0, cursorPosition);
+                const textAfterCursor = input.slice(cursorPosition);
+
+                const ref = `/${skillName} `;
+                const needsLeadingSpace = cursorPosition > 0 && textBeforeCursor[cursorPosition - 1] !== " ";
+                const insertText = needsLeadingSpace ? " " + ref : ref;
+
+                const newVal = textBeforeCursor + insertText + textAfterCursor;
+                setInput(newVal);
+
+                const newCursorPos = cursorPosition + insertText.length;
+                setTimeout(() => {
+                  textarea.focus();
+                  textarea.setSelectionRange(newCursorPos, newCursorPos);
+                }, 0);
+              }}
+            />
           )}
           <ToolsSelector
             activeTools={activeTools}

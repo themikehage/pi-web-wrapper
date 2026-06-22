@@ -167,6 +167,7 @@ sessionsRouter.get("/:id/skills", async (c) => {
 
   try {
     const session = await piSessionManager.getOrCreateSession(username, sessionId);
+    await session.resourceLoader.reload();
     const { skills, diagnostics } = session.resourceLoader.getSkills();
 
     const skillsWithContent = skills.map((skill) => {

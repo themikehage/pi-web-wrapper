@@ -46,6 +46,7 @@ export function ChatArea({ sessionId }: Props) {
   const [error, setError] = useState<string | null>(null);
   const { connected, send, subscribe } = useWebSocket(sessionId);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const firstMessageSentRef = useRef(false);
 
   const loadMessages = useCallback(async () => {
     if (!sessionId) {
@@ -58,7 +59,11 @@ export function ChatArea({ sessionId }: Props) {
     });
     if (res.ok) {
       const data = await res.json();
-      setMessages(data.messages ?? []);
+      const msgs = data.messages ?? [];
+      setMessages(msgs);
+      if (msgs.length > 0) {
+        firstMessageSentRef.current = true;
+      }
     }
   }, [sessionId]);
 
@@ -73,6 +78,7 @@ export function ChatArea({ sessionId }: Props) {
     }
 
     loadMessages();
+    firstMessageSentRef.current = false;
 
     const unsubStart = subscribe("agent_start", () => {
       setStreaming(true);
@@ -126,6 +132,14 @@ export function ChatArea({ sessionId }: Props) {
   const handleSend = useCallback(
     (message: string, option?: "steer" | "follow_up", tools?: string[]) => {
       if (!message.trim() || !sessionId) return;
+
+      if (!firstMessageSentRef.current && option !== "steer" && option !== "follow_up") {
+        firstMessageSentRef.current = true;
+        const name = message.trim().slice(0, 50) + (message.trim().length > 50 ? "..." : "");
+        window.dispatchEvent(
+          new CustomEvent("renameSession", { detail: { sessionId, name } })
+        );
+      }
 
       if (option === "steer") {
         const userMsg: Message = { role: "user", content: `[Steer] ${message}` };

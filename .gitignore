@@ -5,3 +5,4 @@ bun.lockb
 .env
 .env.*
 /pi
+/opencode-manager

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { RichMarkdown } from "./RichMarkdown";
 
-interface SkillInfo {
+export interface SkillInfo {
   name: string;
   description: string;
   filePath: string;
@@ -13,9 +13,10 @@ interface SkillInfo {
 interface Props {
   skills: SkillInfo[];
   loading: boolean;
+  onSelectSkill?: (skillName: string) => void;
 }
 
-export function SkillsSelector({ skills, loading }: Props) {
+export function SkillsSelector({ skills, loading, onSelectSkill }: Props) {
   const [open, setOpen] = useState(false);
   const [viewingSkill, setViewingSkill] = useState<SkillInfo | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -63,7 +64,13 @@ export function SkillsSelector({ skills, loading }: Props) {
             {skills.map((s) => (
               <div
                 key={s.name}
-                className="group flex flex-col p-2 rounded-md hover:bg-surface-hover/50 border border-transparent transition-all"
+                onClick={() => {
+                  if (onSelectSkill) {
+                    onSelectSkill(s.name);
+                    setOpen(false);
+                  }
+                }}
+                className="group flex flex-col p-2 rounded-md hover:bg-surface-hover/50 border border-transparent transition-all cursor-pointer"
               >
                 <div className="flex items-center justify-between gap-2 mb-1">
                   <span className="font-mono font-bold text-text-primary truncate max-w-[65%]">
@@ -76,7 +83,8 @@ export function SkillsSelector({ skills, loading }: Props) {
                       {s.scope === "project" ? "Proj" : "User"}
                     </span>
                     <button
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setViewingSkill(s);
                         setOpen(false);
                       }}
