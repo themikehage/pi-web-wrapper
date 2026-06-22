@@ -3,11 +3,7 @@ import { WorkspaceFileTree } from "./WorkspaceFileTree";
 import { WorkspaceFileEditor } from "./WorkspaceFileEditor";
 import type { FileInfo } from "shared";
 
-interface Props {
-  onClose: () => void;
-}
-
-export function WorkspacePanel({ onClose }: Props) {
+export function WorkspacePanel() {
   const [files, setFiles] = useState<FileInfo[]>([]);
   const [selectedFile, setSelectedFile] = useState<FileInfo | null>(null);
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
@@ -306,20 +302,9 @@ export function WorkspacePanel({ onClose }: Props) {
 
   return (
     <div className="w-full h-full flex flex-col bg-surface overflow-hidden border-l border-surface select-none">
-      <div className="h-10 sm:h-12 px-3 border-b border-surface flex items-center justify-between flex-shrink-0 bg-bg">
-        <div className="flex items-center gap-2">
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            className="text-accent"
-          >
-            <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
-          </svg>
-          <span className="font-display font-bold text-xs sm:text-sm text-text-primary">
-            Workspace
-          </span>
+      <div className="h-9 px-3 border-b border-surface flex items-center justify-between flex-shrink-0 bg-[#0d1321]/80">
+        <div className="text-[10px] text-text-secondary uppercase tracking-wider font-semibold">
+          Files
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -356,19 +341,6 @@ export function WorkspacePanel({ onClose }: Props) {
           >
             <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
               <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
-            </svg>
-          </button>
-          <button
-            onClick={onClose}
-            className="p-1 text-text-secondary hover:text-text-primary hover:bg-surfaceHover/50 rounded transition-colors cursor-pointer"
-            title="Close Workspace"
-          >
-            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
-              <path
-                fillRule="evenodd"
-                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                clipRule="evenodd"
-              />
             </svg>
           </button>
         </div>

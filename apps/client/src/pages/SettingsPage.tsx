@@ -7,7 +7,7 @@ interface ProviderInfo {
   models: Array<{ id: string; name: string; reasoning: boolean }>;
 }
 
-export function SettingsPage({ onClose }: { onClose: () => void }) {
+export function SettingsPage() {
   const [providers, setProviders] = useState<ProviderInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -79,21 +79,7 @@ export function SettingsPage({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="h-dvh flex flex-col bg-bg">
-      <header className="h-10 sm:h-12 flex items-center justify-between px-3 sm:px-4 border-b border-surface flex-shrink-0">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onClose}
-            className="text-text-secondary hover:text-text-primary transition-colors p-1"
-          >
-            <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" className="sm:w-5 sm:h-5">
-              <path d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" />
-            </svg>
-          </button>
-          <h1 className="font-display font-bold text-text-primary text-sm">Settings</h1>
-        </div>
-      </header>
-
+    <div className="h-full flex flex-col bg-bg">
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-2xl mx-auto p-3 sm:p-6 space-y-6">
           <div>

@@ -10,11 +10,7 @@ interface SkillInfo {
   content: string;
 }
 
-interface Props {
-  onClose: () => void;
-}
-
-export function SkillsPage({ onClose }: Props) {
+export function SkillsPage() {
   const [skills, setSkills] = useState<SkillInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -56,31 +52,7 @@ export function SkillsPage({ onClose }: Props) {
   );
 
   return (
-    <div className="h-dvh flex flex-col bg-bg text-text-primary">
-      <header className="h-10 sm:h-12 flex items-center justify-between px-3 sm:px-4 border-b border-surface flex-shrink-0">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => {
-              if (mobileShowDetails) {
-                setMobileShowDetails(false);
-              } else {
-                onClose();
-              }
-            }}
-            className="text-text-secondary hover:text-text-primary transition-colors p-1 cursor-pointer"
-            title="Back to Chat"
-          >
-            <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" className="sm:w-5 sm:h-5">
-              <path d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" />
-            </svg>
-          </button>
-          <h1 className="font-display font-bold text-text-primary text-sm">Skills Library</h1>
-        </div>
-        <div className="text-xs text-text-secondary">
-          {skills.length} skill{skills.length !== 1 ? "s" : ""} loaded
-        </div>
-      </header>
-
+    <div className="h-full flex flex-col bg-bg text-text-primary">
       {error ? (
         <div className="flex-1 flex items-center justify-center p-4">
           <div className="max-w-md w-full p-4 bg-surface border border-surface-hover rounded-lg text-center">
@@ -101,7 +73,7 @@ export function SkillsPage({ onClose }: Props) {
       ) : (
         <div className="flex-1 flex min-h-0">
           <div className={`w-full md:w-80 lg:w-96 border-r border-surface flex flex-col flex-shrink-0 bg-bg ${mobileShowDetails ? "hidden md:flex" : "flex"}`}>
-            <div className="p-3 border-b border-surface">
+            <div className="p-3 border-b border-surface flex flex-col gap-2">
               <div className="relative">
                 <svg
                   className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary pointer-events-none"
@@ -121,6 +93,9 @@ export function SkillsPage({ onClose }: Props) {
                              text-text-primary placeholder-text-secondary outline-none
                              focus:border-accent transition-colors text-xs font-sans"
                 />
+              </div>
+              <div className="text-[10px] text-text-secondary select-none font-medium px-0.5">
+                {skills.length} skill{skills.length !== 1 ? "s" : ""} loaded
               </div>
             </div>
             <div className="flex-1 overflow-y-auto p-2 space-y-1">

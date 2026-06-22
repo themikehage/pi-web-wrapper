@@ -26,13 +26,13 @@ export function AppRouter() {
   return (
     <MainLayout route={route} onNavigate={navigate}>
       {route.page === "settings" && (
-        <SettingsPage onClose={() => navigate("/")} />
+        <SettingsPage />
       )}
       {route.page === "skills" && (
-        <SkillsPage onClose={() => navigate("/")} />
+        <SkillsPage />
       )}
       {route.page === "workspace" && (
-        <WorkspacePanel onClose={() => navigate("/")} />
+        <WorkspacePanel />
       )}
       {route.page === "chat" && (
         <ChatArea key={route.sessionId} sessionId={route.sessionId} />

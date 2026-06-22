@@ -49,35 +49,46 @@ export function MainLayout({ route, onNavigate, children }: Props) {
   const isChat = route.page === "chat";
   const sessionId = route.page === "chat" ? route.sessionId : null;
 
+  const getPageName = () => {
+    switch (route.page) {
+      case "settings":
+        return "Settings";
+      case "skills":
+        return "Skills";
+      case "workspace":
+        return "Workspace";
+      default:
+        return route.sessionId ? "Chat" : "Pi Web";
+    }
+  };
+
   return (
     <div className="h-dvh flex flex-col bg-bg text-text-primary font-sans">
       <header className="h-10 sm:h-12 flex items-center justify-between px-3 sm:px-4 border-b border-surface flex-shrink-0">
         <div className="flex items-center gap-2 sm:gap-3">
-          {isChat ? (
+          {isChat && (
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="text-text-secondary hover:text-text-primary transition-colors p-1 cursor-pointer"
+              className="text-text-secondary hover:text-text-primary transition-colors p-1 cursor-pointer mr-1"
             >
               <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" className="sm:w-5 sm:h-5">
                 <path d="M3 4h14v2H3V4zm0 5h14v2H3V9zm0 5h14v2H3v-2z" />
               </svg>
             </button>
-          ) : (
-            <button
-              onClick={() => onNavigate("/")}
-              className="text-text-secondary hover:text-text-primary transition-colors p-1 cursor-pointer"
-              title="Back to Chat"
-            >
-              <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" className="sm:w-5 sm:h-5">
-                <path d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" />
-              </svg>
-            </button>
           )}
-          <span
+          <div
             onClick={() => onNavigate("/")}
-            className="font-display font-bold text-text-primary text-xs sm:text-sm cursor-pointer select-none"
+            className="p-1 text-accent hover:text-accent/80 cursor-pointer transition-colors"
+            title="Go to Home"
           >
-            Pi Web
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 17L10 11L4 5" />
+              <path d="M12 19H20" />
+            </svg>
+          </div>
+          <span className="text-text-secondary/30 select-none text-xs sm:text-sm">/</span>
+          <span className="font-display font-bold text-text-primary text-xs sm:text-sm select-none">
+            {getPageName()}
           </span>
         </div>
         <div className="flex items-center gap-2 sm:gap-4">
