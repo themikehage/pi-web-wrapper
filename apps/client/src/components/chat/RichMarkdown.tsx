@@ -40,7 +40,7 @@ export function RichMarkdown({ content }: Props) {
   const processedContent = useMemo(() => replaceWorkspacePathsWithLinks(content), [content]);
 
   return (
-    <div className="prose prose-invert max-w-none text-xs sm:text-sm leading-relaxed font-sans">
+    <div className="prose prose-invert max-w-none overflow-x-auto text-xs sm:text-sm leading-relaxed font-sans">
       <ReactMarkdown
         urlTransform={customUrlTransform}
         components={{
@@ -109,6 +109,15 @@ export function RichMarkdown({ content }: Props) {
               <blockquote className="border-l-2 border-accent/40 pl-3 my-2 text-text-secondary/80 italic">
                 {children}
               </blockquote>
+            );
+          },
+          table({ children }) {
+            return (
+              <div className="overflow-x-auto my-2">
+                <table className="min-w-full border-collapse border border-surface-hover text-xs">
+                  {children}
+                </table>
+              </div>
             );
           },
           a({ href, children, ...props }) {
