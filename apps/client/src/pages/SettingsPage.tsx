@@ -126,8 +126,8 @@ export function SettingsPage({ onClose }: { onClose: () => void }) {
               <div className="space-y-3">
                 {providers
                   .filter((p) => p.name.toLowerCase().includes(search.toLowerCase()))
-                  .map((p, index) => {
-                  const showDivider = index > 0 && !p.authStatus.configured && providers[index - 1].authStatus.configured;
+                  .map((p, index, arr) => {
+                  const showDivider = index > 0 && !p.authStatus.configured && arr[index - 1].authStatus.configured;
                   return (
                     <Fragment key={p.id}>
                       {showDivider && (
