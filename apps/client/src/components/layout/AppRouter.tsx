@@ -2,9 +2,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { LoginPage } from "@/pages/LoginPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { SkillsPage } from "@/pages/SkillsPage";
-import { WorkspacePage } from "@/pages/WorkspacePage";
+import { WorkspacePanel } from "@/components/workspace/WorkspacePanel";
+import { ChatArea } from "@/components/chat/ChatArea";
 import { useRouter } from "@/hooks/useRouter";
-import { ChatLayout } from "./ChatLayout";
+import { MainLayout } from "./MainLayout";
 
 export function AppRouter() {
   const { token, user, loading } = useAuth();
@@ -22,17 +23,20 @@ export function AppRouter() {
     return <LoginPage />;
   }
 
-  if (route.page === "settings") {
-    return <SettingsPage onClose={() => navigate("/")} />;
-  }
-
-  if (route.page === "skills") {
-    return <SkillsPage onClose={() => navigate("/")} />;
-  }
-
-  if (route.page === "workspace") {
-    return <WorkspacePage onClose={() => navigate("/")} />;
-  }
-
-  return <ChatLayout sessionId={route.sessionId} onNavigate={navigate} />;
+  return (
+    <MainLayout route={route} onNavigate={navigate}>
+      {route.page === "settings" && (
+        <SettingsPage onClose={() => navigate("/")} />
+      )}
+      {route.page === "skills" && (
+        <SkillsPage onClose={() => navigate("/")} />
+      )}
+      {route.page === "workspace" && (
+        <WorkspacePanel onClose={() => navigate("/")} />
+      )}
+      {route.page === "chat" && (
+        <ChatArea key={route.sessionId} sessionId={route.sessionId} />
+      )}
+    </MainLayout>
+  );
 }

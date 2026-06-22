@@ -20,6 +20,7 @@ export function SkillsPage({ onClose }: Props) {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [selectedSkill, setSelectedSkill] = useState<SkillInfo | null>(null);
+  const [mobileShowDetails, setMobileShowDetails] = useState(false);
 
   const token = localStorage.getItem("token");
 
@@ -59,7 +60,13 @@ export function SkillsPage({ onClose }: Props) {
       <header className="h-10 sm:h-12 flex items-center justify-between px-3 sm:px-4 border-b border-surface flex-shrink-0">
         <div className="flex items-center gap-3">
           <button
-            onClick={onClose}
+            onClick={() => {
+              if (mobileShowDetails) {
+                setMobileShowDetails(false);
+              } else {
+                onClose();
+              }
+            }}
             className="text-text-secondary hover:text-text-primary transition-colors p-1 cursor-pointer"
             title="Back to Chat"
           >
@@ -93,8 +100,7 @@ export function SkillsPage({ onClose }: Props) {
         </div>
       ) : (
         <div className="flex-1 flex min-h-0">
-          {/* Left panel: list of skills */}
-          <div className="w-80 sm:w-96 border-r border-surface flex flex-col flex-shrink-0 bg-bg">
+          <div className={`w-full md:w-80 lg:w-96 border-r border-surface flex flex-col flex-shrink-0 bg-bg ${mobileShowDetails ? "hidden md:flex" : "flex"}`}>
             <div className="p-3 border-b border-surface">
               <div className="relative">
                 <svg
@@ -121,7 +127,10 @@ export function SkillsPage({ onClose }: Props) {
               {filteredSkills.map((s) => (
                 <button
                   key={s.name}
-                  onClick={() => setSelectedSkill(s)}
+                  onClick={() => {
+                    setSelectedSkill(s);
+                    setMobileShowDetails(true);
+                  }}
                   className={`w-full text-left p-3 rounded-lg transition-all duration-150 cursor-pointer ${
                     selectedSkill?.name === s.name
                       ? "bg-surface text-text-primary border border-surface-hover/80 shadow"
@@ -155,10 +164,18 @@ export function SkillsPage({ onClose }: Props) {
             </div>
           </div>
 
-          {/* Right panel: skill details */}
-          <div className="flex-1 overflow-y-auto bg-surface/10 flex flex-col min-w-0">
+          <div className={`flex-1 overflow-y-auto bg-surface/10 flex flex-col min-w-0 ${!mobileShowDetails ? "hidden md:flex" : "flex"}`}>
             {selectedSkill ? (
               <div className="p-4 sm:p-6 max-w-4xl w-full mx-auto space-y-4">
+                <button
+                  onClick={() => setMobileShowDetails(false)}
+                  className="md:hidden flex items-center gap-1.5 text-xs text-text-secondary hover:text-text-primary mb-3 cursor-pointer"
+                >
+                  <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" />
+                  </svg>
+                  Back to list
+                </button>
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-surface pb-4">
                   <div>
                     <h2 className="text-lg font-bold font-display text-text-primary">
