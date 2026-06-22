@@ -14,6 +14,7 @@ export function SettingsPage({ onClose }: { onClose: () => void }) {
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
   const [apiKey, setApiKey] = useState("");
   const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState("");
 
   const token = localStorage.getItem("token");
 
@@ -100,13 +101,32 @@ export function SettingsPage({ onClose }: { onClose: () => void }) {
             {error && (
               <p className="text-error text-sm mb-4 p-3 bg-surface rounded-lg">{error}</p>
             )}
+            <div className="relative mb-4">
+              <svg
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary pointer-events-none"
+                fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" />
+              </svg>
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search providers..."
+                className="w-full pl-10 pr-3 py-2 bg-surface border border-surface-hover rounded-lg
+                           text-text-primary placeholder-text-secondary outline-none
+                           focus:border-accent transition-colors text-sm"
+              />
+            </div>
             {loading ? (
               <div className="flex justify-center py-8">
                 <div className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin" />
               </div>
             ) : (
               <div className="space-y-3">
-                {providers.map((p, index) => {
+                {providers
+                  .filter((p) => p.name.toLowerCase().includes(search.toLowerCase()))
+                  .map((p, index) => {
                   const showDivider = index > 0 && !p.authStatus.configured && providers[index - 1].authStatus.configured;
                   return (
                     <Fragment key={p.id}>
