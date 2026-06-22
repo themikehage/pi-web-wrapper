@@ -66,6 +66,24 @@ export function WorkspacePanel({ onClose }: Props) {
     loadWorkspace();
   }, [loadWorkspace]);
 
+  // Full workspace reload (root + all expanded subdirectories)
+  const reloadWorkspace = useCallback(async () => {
+    await loadWorkspace("");
+    // Reload expanded subdirectories sequentially to refresh caches
+    const paths = Array.from(expandedPaths);
+    for (const path of paths) {
+      await loadWorkspace(path);
+    }
+  }, [expandedPaths, loadWorkspace]);
+
+  // Listen for agent workspaceUpdated notifications to reload automatically
+  useEffect(() => {
+    window.addEventListener("workspaceUpdated", reloadWorkspace);
+    return () => {
+      window.removeEventListener("workspaceUpdated", reloadWorkspace);
+    };
+  }, [reloadWorkspace]);
+
   // Handle expanding/collapsing folders
   const handleToggleExpand = useCallback(
     async (path: string) => {

@@ -1,10 +1,6 @@
 {
   "name": "pi-web-wrapper",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
   "scripts": {
     "dev": "pnpm -r --parallel run dev",
     "build": "pnpm -r --parallel run build",

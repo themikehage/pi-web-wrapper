@@ -80,6 +80,7 @@ export function ChatArea({ sessionId }: Props) {
 
     const unsubEnd = subscribe("agent_end", () => {
       setStreaming(false);
+      window.dispatchEvent(new CustomEvent("workspaceUpdated"));
     });
 
     const unsubMsg = subscribe("message_update", (data: unknown) => {
@@ -105,6 +106,7 @@ export function ChatArea({ sessionId }: Props) {
         const rest = prev.slice(0, -1);
         return [...rest, msg];
       });
+      window.dispatchEvent(new CustomEvent("workspaceUpdated"));
     });
 
     const unsubError = subscribe("agent_error", (data: unknown) => {
