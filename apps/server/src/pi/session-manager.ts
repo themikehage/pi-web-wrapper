@@ -94,6 +94,12 @@ class PiSessionManager {
     writeFileSync(envPath, JSON.stringify(env, null, 2), "utf-8");
   }
 
+  setUserEnvMap(username: string, env: Record<string, string>): void {
+    const userDir = this.ensureUserDir(username);
+    const envPath = join(userDir, "env.json");
+    writeFileSync(envPath, JSON.stringify(env, null, 2), "utf-8");
+  }
+
   deleteUserEnv(username: string, key: string): void {
     const userDir = this.ensureUserDir(username);
     const envPath = join(userDir, "env.json");

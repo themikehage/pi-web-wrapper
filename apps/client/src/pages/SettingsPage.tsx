@@ -25,6 +25,8 @@ export function SettingsPage() {
   const [newEnvVal, setNewEnvVal] = useState("");
   const [savingEnv, setSavingEnv] = useState(false);
   const [activeTab, setActiveTab] = useState<"general" | "providers" | "env">("providers");
+  const [isDevView, setIsDevView] = useState(false);
+  const [bulkEnvText, setBulkEnvText] = useState("");
 
   const token = localStorage.getItem("token");
 
@@ -113,6 +115,70 @@ export function SettingsPage() {
       await fetchEnvVars();
     } catch (err) {
       setEnvError(err instanceof Error ? err.message : "Error deleting environment variable");
+    }
+  };
+
+  const handleToggleDevView = () => {
+    if (isDevView) {
+      setIsDevView(false);
+      setEnvError("");
+    } else {
+      const text = envVars.map((v) => `${v.key}=${v.value}`).join("\n");
+      setBulkEnvText(text);
+      setIsDevView(true);
+      setEnvError("");
+    }
+  };
+
+  const handleSaveBulkEnv = async () => {
+    setSavingEnv(true);
+    setEnvError("");
+    try {
+      const lines = bulkEnvText.split("\n");
+      const variables: Record<string, string> = {};
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line || line.startsWith("#")) {
+          continue;
+        }
+        const eqIdx = line.indexOf("=");
+        if (eqIdx === -1) {
+          throw new Error(`Invalid format on line ${i + 1}: "${line}". Must be KEY=value`);
+        }
+        const key = line.slice(0, eqIdx).trim().toUpperCase();
+        const value = line.slice(eqIdx + 1).trim();
+
+        if (!/^[A-Z_][A-Z0-9_]*$/.test(key)) {
+          throw new Error(`Invalid key on line ${i + 1}: "${key}". Names must start with a letter or underscore and contain only alphanumeric characters or underscores.`);
+        }
+        if (!value) {
+          throw new Error(`Value for key "${key}" cannot be empty. If you want to delete this variable, completely remove the line.`);
+        }
+        variables[key] = value;
+      }
+
+      const res = await fetch("/api/env", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ variables }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Failed to update environment variables");
+      }
+
+      const data = await res.json();
+      setEnvVars(data.env ?? []);
+      setIsDevView(false);
+    } catch (err) {
+      setEnvError(err instanceof Error ? err.message : "Error saving environment variables");
+    } finally {
+      setSavingEnv(false);
     }
   };
 
@@ -338,17 +404,31 @@ export function SettingsPage() {
                     Configure custom environment variables (e.g., GITHUB_TOKEN, NOTION_TOKEN) for your agent's shell activities.
                   </p>
                 </div>
-                <button
-                  onClick={() => {
-                    setIsAddingEnv(true);
-                    setNewEnvKey("");
-                    setNewEnvVal("");
-                    setEnvError("");
-                  }}
-                  className="text-xs bg-accent text-bg font-semibold px-3 py-1.5 rounded-lg hover:opacity-90 transition-opacity flex-shrink-0 cursor-pointer"
-                >
-                  Add Variable
-                </button>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <button
+                    onClick={handleToggleDevView}
+                    className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
+                      isDevView
+                        ? "bg-accent/10 border-accent/25 text-accent"
+                        : "bg-surface hover:bg-surface-hover/50 border-surface-hover/30 text-text-secondary hover:text-text-primary"
+                    }`}
+                  >
+                    {isDevView ? "Standard View" : "Developer View"}
+                  </button>
+                  {!isDevView && (
+                    <button
+                      onClick={() => {
+                        setIsAddingEnv(true);
+                        setNewEnvKey("");
+                        setNewEnvVal("");
+                        setEnvError("");
+                      }}
+                      className="text-xs bg-accent text-bg font-semibold px-3 py-1.5 rounded-lg hover:opacity-90 transition-opacity flex-shrink-0 cursor-pointer"
+                    >
+                      Add Variable
+                    </button>
+                  )}
+                </div>
               </div>
 
               {envError && (
@@ -358,6 +438,52 @@ export function SettingsPage() {
               {envLoading ? (
                 <div className="flex justify-center py-8">
                   <div className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : isDevView ? (
+                <div className="space-y-4">
+                  <div className="bg-surface rounded-lg p-3 sm:p-4 border border-surface-hover/30 space-y-3">
+                    <div className="flex items-center justify-between border-b border-surface-hover/30 pb-2">
+                      <span className="text-xs text-text-secondary font-medium font-mono">
+                        .env Configuration
+                      </span>
+                      <span className="text-[10px] bg-accent/10 text-accent font-semibold px-2 py-0.5 rounded-full select-none uppercase tracking-wider font-mono">
+                        Editor Mode
+                      </span>
+                    </div>
+                    <textarea
+                      value={bulkEnvText}
+                      onChange={(e) => setBulkEnvText(e.target.value)}
+                      placeholder="# Example environment variables&#10;GITHUB_TOKEN=••••••••&#10;NOTION_TOKEN=secret_val"
+                      rows={12}
+                      className="w-full p-3 bg-bg border border-surface-hover/30 rounded-lg
+                                 text-text-primary font-mono text-xs placeholder-text-secondary/50 outline-none
+                                 focus:border-accent transition-colors resize-y leading-relaxed"
+                    />
+                    <div className="text-[11px] text-text-secondary space-y-1">
+                      <p>• Edit variables in KEY=value format, one per line.</p>
+                      <p>• Existing secrets are masked as ••••••••. Keep them as is to leave their values unchanged.</p>
+                      <p>• Completely remove a line to delete that environment variable.</p>
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <button
+                      onClick={() => {
+                        setIsDevView(false);
+                        setEnvError("");
+                      }}
+                      className="px-4 py-2 text-xs text-text-secondary hover:text-text-primary font-semibold transition-colors cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSaveBulkEnv}
+                      disabled={savingEnv}
+                      className="px-4 py-2 text-xs bg-accent text-bg font-semibold rounded-lg
+                                 hover:opacity-90 disabled:opacity-50 transition-opacity cursor-pointer"
+                    >
+                      {savingEnv ? "Saving..." : "Save Changes"}
+                    </button>
+                  </div>
                 </div>
               ) : envVars.length === 0 ? (
                 <div className="bg-surface rounded-lg p-6 text-center border border-surface-hover/10">
