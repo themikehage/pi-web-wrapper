@@ -168,7 +168,11 @@ const handleGetWorkspace = async (c: any) => {
       const file = Bun.file(fullPath);
 
       if (raw) {
-        return c.body(file.stream());
+        return new Response(file.stream(), {
+          headers: {
+            "Content-Type": file.type || "application/octet-stream",
+          },
+        });
       }
 
       if (download) {

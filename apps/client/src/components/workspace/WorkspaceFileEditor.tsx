@@ -26,8 +26,11 @@ export function WorkspaceFileEditor({ file, onSave }: Props) {
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
+  const [activeTab, setActiveTab] = useState<"code" | "preview">("code");
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const isImage = file?.mimeType?.startsWith("image/") || false;
+  const isHtml = file?.name.endsWith(".html") || file?.name.endsWith(".htm") || false;
   const isText =
     file?.mimeType?.startsWith("text/") ||
     file?.mimeType === "application/json" ||
@@ -56,9 +59,13 @@ export function WorkspaceFileEditor({ file, onSave }: Props) {
       setDirty(false);
       setSaveStatus("idle");
       setErrorMsg("");
+      setActiveTab("code");
+      setIsFullscreen(false);
     } else {
       setContent("");
       setDirty(false);
+      setActiveTab("code");
+      setIsFullscreen(false);
     }
   }, [file, isText]);
 
@@ -109,7 +116,7 @@ export function WorkspaceFileEditor({ file, onSave }: Props) {
   }
 
   const token = localStorage.getItem("token");
-  const imageUrl = `/api/workspace/${file.path}?raw=true&token=${encodeURIComponent(
+  const rawFileUrl = `/api/workspace/${file.path}?raw=true&token=${encodeURIComponent(
     token || ""
   )}`;
   const downloadUrl = `/api/workspace/${file.path}?download=true&token=${encodeURIComponent(
@@ -118,18 +125,78 @@ export function WorkspaceFileEditor({ file, onSave }: Props) {
 
   return (
     <div className="h-full flex flex-col bg-[#0b0f19] border-t border-surface sm:border-t-0 sm:border-l border-surface">
+      {/* Fullscreen HTML Preview Overlay */}
+      {isFullscreen && (
+        <div className="fixed inset-0 z-50 bg-[#0b0f19] flex flex-col font-sans select-none animate-fade-in">
+          <div className="h-10 px-4 border-b border-surface flex items-center justify-between bg-[#0d1321] flex-shrink-0">
+            <span className="text-xs font-mono font-semibold text-text-primary truncate">
+              Fullscreen Preview - {file.name}
+            </span>
+            <div className="flex items-center gap-3">
+              <a
+                href={rawFileUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-2.5 py-1 bg-surfaceHover hover:bg-surfaceHover/80 text-text-primary text-[10px] rounded font-semibold transition-colors flex items-center gap-1"
+              >
+                New Tab
+              </a>
+              <button
+                onClick={() => setIsFullscreen(false)}
+                className="px-2.5 py-1 bg-accent hover:bg-accent/80 text-text-primary text-[10px] rounded font-semibold transition-colors cursor-pointer"
+              >
+                Exit Fullscreen
+              </button>
+            </div>
+          </div>
+          <div className="flex-1 w-full h-full bg-white">
+            <iframe
+              src={rawFileUrl}
+              className="w-full h-full border-0"
+              title="Fullscreen HTML Preview"
+            />
+          </div>
+        </div>
+      )}
+
       {/* Editor Header Bar */}
       <div className="h-9 px-3 border-b border-surface flex items-center justify-between flex-shrink-0 bg-[#0d1321]/80">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-xs font-mono font-semibold text-text-primary truncate">
+          <span className="text-xs font-mono font-semibold text-text-primary truncate max-w-[100px] sm:max-w-none">
             {file.name}
           </span>
           {dirty && (
             <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse flex-shrink-0" />
           )}
+
+          {/* HTML Tab Switcher */}
+          {isHtml && (
+            <div className="flex bg-[#0b0f19] rounded p-0.5 border border-surface ml-2">
+              <button
+                onClick={() => setActiveTab("code")}
+                className={`px-2 py-0.5 rounded text-[9px] font-semibold transition-all cursor-pointer ${
+                  activeTab === "code"
+                    ? "bg-surfaceHover text-text-primary"
+                    : "text-text-secondary hover:text-text-primary"
+                }`}
+              >
+                Code
+              </button>
+              <button
+                onClick={() => setActiveTab("preview")}
+                className={`px-2 py-0.5 rounded text-[9px] font-semibold transition-all cursor-pointer ${
+                  activeTab === "preview"
+                    ? "bg-surfaceHover text-text-primary"
+                    : "text-text-secondary hover:text-text-primary"
+                }`}
+              >
+                Preview
+              </button>
+            </div>
+          )}
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {saveStatus === "success" && (
             <span className="text-[10px] text-success font-sans flex items-center gap-1 animate-fade-in">
               <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor">
@@ -145,14 +212,14 @@ export function WorkspaceFileEditor({ file, onSave }: Props) {
 
           {saveStatus === "error" && (
             <span
-              className="text-[10px] text-error font-sans truncate max-w-[150px]"
+              className="text-[10px] text-error font-sans truncate max-w-[100px]"
               title={errorMsg}
             >
-              Error saving
+              Error
             </span>
           )}
 
-          {isText && (
+          {isText && activeTab === "code" && (
             <button
               onClick={handleSave}
               disabled={saving || !dirty}
@@ -167,6 +234,35 @@ export function WorkspaceFileEditor({ file, onSave }: Props) {
               ) : null}
               {saving ? "Saving" : "Save"}
             </button>
+          )}
+
+          {/* HTML Preview Specific Actions */}
+          {isHtml && activeTab === "preview" && (
+            <>
+              <button
+                onClick={() => setIsFullscreen(true)}
+                className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-sans font-semibold text-text-secondary hover:text-text-primary hover:bg-surfaceHover/50 transition-colors cursor-pointer"
+                title="Fullscreen Preview"
+              >
+                <svg width="11" height="11" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M3 4a1 1 0 011-1h3a1 1 0 010 2H5v2a1 1 0 01-2 0V4zm14 0a1 1 0 00-1-1h-3a1 1 0 100 2h2v2a1 1 0 102 0V4zM3 16a1 1 0 001 1h3a1 1 0 100-2H5v-2a1 1 0 10-2 0v3zm14 0a1 1 0 01-1 1h-3a1 1 0 110-2h2v-2a1 1 0 112 0v3z" />
+                </svg>
+                Fullscreen
+              </button>
+              <a
+                href={rawFileUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-sans font-semibold text-text-secondary hover:text-text-primary hover:bg-surfaceHover/50 transition-colors"
+                title="Open in new tab"
+              >
+                <svg width="11" height="11" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z" />
+                  <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z" />
+                </svg>
+                New Tab
+              </a>
+            </>
           )}
 
           <a
@@ -189,7 +285,7 @@ export function WorkspaceFileEditor({ file, onSave }: Props) {
 
       {/* Editor Content Area */}
       <div className="flex-1 overflow-hidden min-h-0 relative">
-        {isText ? (
+        {isText && activeTab === "code" ? (
           <textarea
             value={content}
             onChange={(e) => {
@@ -201,10 +297,18 @@ export function WorkspaceFileEditor({ file, onSave }: Props) {
             className="w-full h-full bg-transparent text-text-primary font-mono text-[11px] leading-relaxed p-3.5 outline-none resize-none border-0 focus:ring-0"
             placeholder="File is empty"
           />
+        ) : isHtml && activeTab === "preview" ? (
+          <div className="w-full h-full bg-white">
+            <iframe
+              src={rawFileUrl}
+              className="w-full h-full border-0"
+              title="HTML Preview Pane"
+            />
+          </div>
         ) : isImage ? (
           <div className="w-full h-full overflow-auto bg-black/10 flex items-center justify-center p-4">
             <img
-              src={imageUrl}
+              src={rawFileUrl}
               alt={file.name}
               className="max-w-full max-h-full object-contain rounded border border-surface shadow-md"
             />
