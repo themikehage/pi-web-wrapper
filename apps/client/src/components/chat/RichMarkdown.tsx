@@ -60,6 +60,22 @@ export function RichMarkdown({ content }: Props) {
               );
             }
 
+            const isTree = !match && /[├└│].*─{2,}/.test(codeString);
+
+            if (isTree) {
+              return (
+                <div className="my-3 rounded-lg overflow-x-auto border border-surface-hover shadow-md font-mono text-xs">
+                  <div className="bg-surface px-3 py-1.5 border-b border-surface-hover text-[10px] text-text-secondary flex items-center gap-1.5">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
+                      <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
+                    </svg>
+                    <span>File Tree</span>
+                  </div>
+                  <pre className="m-0 p-3 bg-[#171717] whitespace-pre">{codeString}</pre>
+                </div>
+              );
+            }
+
             return (
               <div className="my-3 rounded-lg overflow-x-auto border border-surface-hover shadow-md font-mono text-xs">
                 <div className="bg-surface px-3 py-1.5 border-b border-surface-hover text-[10px] text-text-secondary flex justify-between items-center">
