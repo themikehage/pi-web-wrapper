@@ -95,6 +95,12 @@ export type SaveTemplates = z.infer<typeof SaveTemplatesSchema>;
 export const RepoBindingsSchema = z.record(z.string(), z.record(z.string(), z.string()));
 export type RepoBindings = z.infer<typeof RepoBindingsSchema>;
 
+export const ChangePasswordSchema = z.object({
+  currentPassword: z.string().min(8),
+  newPassword: z.string().min(8),
+});
+export type ChangePassword = z.infer<typeof ChangePasswordSchema>;
+
 export type Login = z.infer<typeof LoginSchema>;
 export type Prompt = z.infer<typeof PromptSchema>;
 export type Session = z.infer<typeof SessionSchema>;

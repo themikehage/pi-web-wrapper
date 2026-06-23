@@ -342,6 +342,24 @@ class PiSessionManager {
   }
 
 
+  getUserPasswordHash(username: string): string | null {
+    const userDir = this.ensureUserDir(username);
+    const credPath = join(userDir, "credentials.json");
+    if (!existsSync(credPath)) return null;
+    try {
+      const data = JSON.parse(readFileSync(credPath, "utf-8"));
+      return data.passwordHash ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  setUserPasswordHash(username: string, hashB64: string): void {
+    const userDir = this.ensureUserDir(username);
+    const credPath = join(userDir, "credentials.json");
+    writeFileSync(credPath, JSON.stringify({ passwordHash: hashB64 }, null, 2), "utf-8");
+  }
+
   async destroyAllSessions(username: string): Promise<void> {
     const prefix = `${username}:`;
     for (const [key, entry] of this.sessions) {

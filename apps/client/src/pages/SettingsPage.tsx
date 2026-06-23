@@ -10,7 +10,7 @@ interface ProviderInfo {
 }
 
 export function SettingsPage() {
-  const { user, logout } = useAuth();
+  const { user, logout, changePassword } = useAuth();
   const [providers, setProviders] = useState<ProviderInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -43,6 +43,14 @@ export function SettingsPage() {
   const [newIntegrationDesc, setNewIntegrationDesc] = useState("");
   const [newIntegrationEnvVars, setNewIntegrationEnvVars] = useState("");
   const [newIntegrationRepoVars, setNewIntegrationRepoVars] = useState("");
+
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [pwCurrent, setPwCurrent] = useState("");
+  const [pwNew, setPwNew] = useState("");
+  const [pwConfirm, setPwConfirm] = useState("");
+  const [pwSaving, setPwSaving] = useState(false);
+  const [pwError, setPwError] = useState("");
+  const [pwSuccess, setPwSuccess] = useState(false);
 
   const [isAddingAction, setIsAddingAction] = useState<string | null>(null);
   const [newActionId, setNewActionId] = useState("");
@@ -448,6 +456,89 @@ export function SettingsPage() {
                 >
                   Sign Out
                 </button>
+              </div>
+
+              <div className="bg-surface rounded-lg p-4 border border-surface-hover/30">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-text-primary font-semibold text-sm">Password</h3>
+                  {!showPasswordForm && (
+                    <button
+                      onClick={() => { setShowPasswordForm(true); setPwError(""); setPwSuccess(false); }}
+                      className="text-xs bg-accent/10 text-accent hover:bg-accent/20 border border-accent/25 px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer"
+                    >
+                      Change
+                    </button>
+                  )}
+                </div>
+                {showPasswordForm && (
+                  <div className="space-y-3">
+                    <input
+                      type="password"
+                      placeholder="Current password"
+                      value={pwCurrent}
+                      onChange={(e) => setPwCurrent(e.target.value)}
+                      className="w-full px-3 py-2 bg-bg border border-surface-hover rounded-lg text-text-primary placeholder-text-secondary outline-none focus:border-accent transition-colors text-sm"
+                    />
+                    <input
+                      type="password"
+                      placeholder="New password"
+                      value={pwNew}
+                      onChange={(e) => setPwNew(e.target.value)}
+                      className="w-full px-3 py-2 bg-bg border border-surface-hover rounded-lg text-text-primary placeholder-text-secondary outline-none focus:border-accent transition-colors text-sm"
+                    />
+                    <input
+                      type="password"
+                      placeholder="Confirm new password"
+                      value={pwConfirm}
+                      onChange={(e) => setPwConfirm(e.target.value)}
+                      className="w-full px-3 py-2 bg-bg border border-surface-hover rounded-lg text-text-primary placeholder-text-secondary outline-none focus:border-accent transition-colors text-sm"
+                    />
+                    {pwError && <p className="text-error text-xs">{pwError}</p>}
+                    {pwSuccess && <p className="text-success text-xs">Password updated successfully.</p>}
+                    <div className="flex gap-2 justify-end">
+                      <button
+                        onClick={() => { setShowPasswordForm(false); setPwCurrent(""); setPwNew(""); setPwConfirm(""); setPwError(""); setPwSuccess(false); }}
+                        className="text-xs bg-surface-hover/20 text-text-secondary hover:text-text-primary border border-surface-hover/30 px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (!pwCurrent || !pwNew || !pwConfirm) {
+                            setPwError("All fields are required");
+                            return;
+                          }
+                          if (pwNew !== pwConfirm) {
+                            setPwError("New passwords do not match");
+                            return;
+                          }
+                          if (pwNew.length < 8) {
+                            setPwError("New password must be at least 8 characters");
+                            return;
+                          }
+                          setPwSaving(true);
+                          setPwError("");
+                          setPwSuccess(false);
+                          try {
+                            await changePassword(pwCurrent, pwNew);
+                            setPwSuccess(true);
+                            setPwCurrent("");
+                            setPwNew("");
+                            setPwConfirm("");
+                          } catch (err) {
+                            setPwError(err instanceof Error ? err.message : "Failed to change password");
+                          } finally {
+                            setPwSaving(false);
+                          }
+                        }}
+                        disabled={pwSaving}
+                        className="text-xs bg-accent/10 text-accent hover:bg-accent/20 border border-accent/25 px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer disabled:opacity-50"
+                      >
+                        {pwSaving ? "Saving..." : "Save"}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="bg-surface rounded-lg p-4 border border-surface-hover/30 space-y-4">
