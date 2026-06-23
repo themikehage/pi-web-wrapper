@@ -84,19 +84,6 @@ export function MainLayout({ route, onNavigate, activeRepoName, children }: Prop
     <div className="h-dvh flex flex-col bg-bg text-text-primary font-sans">
       <header className="h-10 sm:h-12 flex items-center justify-between px-3 sm:px-4 border-b border-surface flex-shrink-0">
         <div className="flex items-center gap-2 sm:gap-3">
-          <button
-            onClick={() => onNavigate("/projects")}
-            className={`px-2.5 py-1 text-xs bg-surface hover:bg-accent hover:text-bg text-text-primary border border-surface-hover rounded-md transition-colors cursor-pointer mr-2 flex items-center gap-1 font-semibold ${
-              route.page === "projects" ? "bg-accent text-bg" : ""
-            }`}
-            title="Lista de Proyectos"
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <line x1="19" y1="12" x2="5" y2="12" />
-              <polyline points="12 19 5 12 12 5" />
-            </svg>
-            Proyectos
-          </button>
           <div
             onClick={isChat ? () => setSidebarOpen(!sidebarOpen) : () => onNavigate("/")}
             className="p-1 text-accent hover:text-accent/80 cursor-pointer transition-colors"
@@ -113,6 +100,20 @@ export function MainLayout({ route, onNavigate, activeRepoName, children }: Prop
           </span>
         </div>
         <div className="flex items-center gap-2 sm:gap-4">
+          <button
+            onClick={() => onNavigate("/projects")}
+            className={`p-1 cursor-pointer transition-colors ${
+              route.page === "projects"
+                ? "text-accent"
+                : "text-text-secondary hover:text-text-primary"
+            }`}
+            title="Projects"
+          >
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" className="sm:w-[18px] sm:h-[18px]">
+              <path d="M7 3a1 1 0 000 2h5.586l-1.293 1.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L12.586 3H7z" />
+              <path d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586l-1 1H16v8H4V6h1.586l-1-1H4z" />
+            </svg>
+          </button>
           <button
             onClick={() => onNavigate("/workspace")}
             className={`p-1 cursor-pointer transition-colors ${

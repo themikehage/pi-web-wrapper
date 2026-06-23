@@ -85,96 +85,98 @@ export function DashboardPage({ onSelectRepo }: Props) {
   };
 
   return (
-    <div className="min-h-screen bg-bg text-text-primary p-4 md:p-8 flex flex-col items-center">
-      <div className="w-full max-w-5xl">
-        <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 border-b border-surface pb-6">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-text-primary">Dashboard de Proyectos</h1>
-            <p className="text-sm text-text-secondary mt-1">
-              Selecciona un repositorio para trabajar de forma aislada o usa el workspace global en la raíz.
-            </p>
-          </div>
-          <div className="flex gap-3">
-            <button
-              onClick={() => onSelectRepo(null)}
-              className="px-4 py-2 rounded-lg text-sm font-medium border border-surface hover:bg-surface-hover text-text-primary transition-colors cursor-pointer"
-            >
-              Workspace Global (Raíz)
-            </button>
-            <button
-              onClick={() => setShowModal(true)}
-              className="px-4 py-2 bg-accent hover:opacity-90 text-bg rounded-lg text-sm font-semibold transition-opacity cursor-pointer font-bold"
-            >
-              + Nuevo Proyecto
-            </button>
-          </div>
-        </header>
-
-        {error && (
-          <div className="p-4 bg-error/10 border border-error/20 text-error rounded-lg text-sm mb-6">
-            {error}
-          </div>
-        )}
-
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-20">
-            <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-sm text-text-secondary mt-4">Cargando repositorios...</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {repos.map((repo) => (
-              <div
-                key={repo.name}
-                className="bg-surface border border-surface-hover hover:border-accent/40 rounded-xl p-5 transition-all flex flex-col justify-between"
+    <div className="h-full flex flex-col bg-bg">
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-4xl mx-auto p-3 sm:p-6 space-y-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div>
+              <h1 className="text-text-primary font-semibold text-base">Proyectos</h1>
+              <p className="text-text-secondary text-[11px] mt-0.5">
+                Inicializa un proyecto vacío o clona uno existente de Git para trabajar con el agente.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => onSelectRepo(null)}
+                className="text-xs bg-surface-hover/20 text-text-secondary hover:text-text-primary border border-surface-hover/30 px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer"
               >
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="p-2 rounded-lg bg-surface-hover">
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-accent" strokeWidth="2">
-                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-                      </svg>
-                    </div>
-                    <span className="font-semibold text-lg text-text-primary truncate">{repo.name}</span>
-                  </div>
-                  <p className="text-xs text-text-secondary mt-4">
-                    Última modificación: {new Date(repo.lastModified).toLocaleDateString()}
-                  </p>
-                </div>
-                <button
-                  onClick={() => onSelectRepo(repo.name)}
-                  className="w-full mt-6 py-2 bg-surface-hover hover:bg-accent hover:text-bg text-text-primary rounded-lg text-sm font-medium transition-colors cursor-pointer flex items-center justify-center gap-1"
-                >
-                  Abrir Proyecto
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                    <polyline points="12 5 19 12 12 19" />
-                  </svg>
-                </button>
-              </div>
-            ))}
-
-            {repos.length === 0 && (
-              <div className="col-span-full bg-surface border border-surface-hover border-dashed rounded-xl p-12 text-center">
-                <div className="w-12 h-12 rounded-full bg-surface-hover flex items-center justify-center mx-auto mb-4">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-text-secondary" strokeWidth="2">
-                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-                  </svg>
-                </div>
-                <h3 className="font-semibold text-text-primary text-lg">No hay proyectos locales</h3>
-                <p className="text-sm text-text-secondary mt-1 max-w-sm mx-auto">
-                  Inicializa un proyecto vacío o clona uno existente de Git para empezar a trabajar con el agente.
-                </p>
-                <button
-                  onClick={() => setShowModal(true)}
-                  className="mt-6 px-4 py-2 bg-accent hover:opacity-90 text-bg rounded-lg text-sm font-semibold transition-opacity cursor-pointer font-bold"
-                >
-                  Crear primer proyecto
-                </button>
-              </div>
-            )}
+                Workspace Global
+              </button>
+              <button
+                onClick={() => setShowModal(true)}
+                className="text-xs bg-accent/10 text-accent hover:bg-accent/20 border border-accent/25 px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer"
+              >
+                + Nuevo Proyecto
+              </button>
+            </div>
           </div>
-        )}
+
+          {error && (
+            <div className="p-4 bg-error/10 border border-error/20 text-error rounded-lg text-xs">
+              {error}
+            </div>
+          )}
+
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-20">
+              <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+              <p className="text-sm text-text-secondary mt-4">Cargando repositorios...</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+              {repos.map((repo) => (
+                <div
+                  key={repo.name}
+                  className="bg-surface rounded-lg p-4 border border-surface-hover/30 hover:border-accent/40 transition-all flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-7 h-7 rounded-lg bg-surface-hover flex items-center justify-center">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-accent" strokeWidth="2">
+                          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                        </svg>
+                      </div>
+                      <span className="font-semibold text-sm text-text-primary truncate">{repo.name}</span>
+                    </div>
+                    <p className="text-[11px] text-text-secondary">
+                      Última modificación: {new Date(repo.lastModified).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => onSelectRepo(repo.name)}
+                    className="w-full mt-4 py-1.5 bg-surface-hover/20 hover:bg-accent hover:text-bg text-text-primary rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1"
+                  >
+                    Abrir
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                      <polyline points="12 5 19 12 12 19" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+
+              {repos.length === 0 && (
+                <div className="col-span-full bg-surface rounded-lg p-8 text-center border border-surface-hover/30 border-dashed">
+                  <div className="w-10 h-10 rounded-full bg-surface-hover flex items-center justify-center mx-auto mb-3">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-text-secondary" strokeWidth="2">
+                      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                    </svg>
+                  </div>
+                  <h3 className="font-semibold text-text-primary text-sm">No hay proyectos</h3>
+                  <p className="text-xs text-text-secondary mt-1 max-w-xs mx-auto">
+                    Crea o clona un repositorio para empezar a trabajar con el agente.
+                  </p>
+                  <button
+                    onClick={() => setShowModal(true)}
+                    className="mt-4 px-4 py-1.5 bg-accent/10 text-accent hover:bg-accent/20 border border-accent/25 rounded-lg text-xs font-semibold transition-all cursor-pointer"
+                  >
+                    Crear proyecto
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {showModal && (
