@@ -68,7 +68,22 @@ export function ChatArea({ sessionId, activeRepoName }: Props) {
   });
   const { connected, send, subscribe } = useWebSocket(sessionId);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const isAtBottomRef = useRef(true);
   const firstMessageSentRef = useRef(false);
+
+  const SCROLL_THRESHOLD = 50;
+
+  const handleScroll = useCallback(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    const { scrollTop, scrollHeight, clientHeight } = container;
+    isAtBottomRef.current = scrollHeight - scrollTop - clientHeight < SCROLL_THRESHOLD;
+  }, []);
+
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
+    messagesEndRef.current?.scrollIntoView({ behavior });
+  }, []);
 
   const handleRunTasks = useCallback(async () => {
     if (!sessionId) return;
@@ -149,12 +164,16 @@ export function ChatArea({ sessionId, activeRepoName }: Props) {
       if (msgs.length > 0) {
         firstMessageSentRef.current = true;
       }
+      isAtBottomRef.current = true;
+      scrollToBottom("instant");
     }
-  }, [sessionId]);
+  }, [sessionId, scrollToBottom]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    if (isAtBottomRef.current) {
+      scrollToBottom();
+    }
+  }, [messages, scrollToBottom]);
 
   useEffect(() => {
     if (!sessionId) {
@@ -273,6 +292,8 @@ export function ChatArea({ sessionId, activeRepoName }: Props) {
     (message: string, option?: "steer" | "follow_up", tools?: string[]) => {
       if (!message.trim() || !sessionId) return;
 
+      isAtBottomRef.current = true;
+
       if (!firstMessageSentRef.current && option !== "steer" && option !== "follow_up") {
         firstMessageSentRef.current = true;
         const name = message.trim().slice(0, 50) + (message.trim().length > 50 ? "..." : "");
@@ -367,7 +388,11 @@ export function ChatArea({ sessionId, activeRepoName }: Props) {
             <button onClick={() => setError(null)} className="ml-2 underline">Dismiss</button>
           </div>
         )}
-        <div className="flex-1 overflow-y-auto min-h-0">
+        <div
+          ref={scrollContainerRef}
+          onScroll={handleScroll}
+          className="flex-1 overflow-y-auto min-h-0"
+        >
           <div className="max-w-3xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
             <MessageList messages={messages} onNavigate={handleNavigate} sessionId={sessionId} />
             <div ref={messagesEndRef} />
