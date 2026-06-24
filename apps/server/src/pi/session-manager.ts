@@ -9,7 +9,7 @@ import {
   type AgentSession,
   type AgentSessionEvent,
 } from "@earendil-works/pi-coding-agent";
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve, dirname } from "node:path";
 import { AVAILABLE_TOOLS } from "shared";
 
@@ -325,6 +325,11 @@ class PiSessionManager {
       entry.unsubscribe();
       entry.session.dispose();
       this.sessions.delete(key);
+    }
+    const userDir = this.ensureUserDir(username);
+    const sessionDir = join(userDir, "sessions", sessionId);
+    if (existsSync(sessionDir)) {
+      rmSync(sessionDir, { recursive: true, force: true });
     }
   }
 

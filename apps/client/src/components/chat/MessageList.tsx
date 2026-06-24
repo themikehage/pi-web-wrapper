@@ -185,8 +185,8 @@ function AgentTurn({
   const lastAssistant = assistantMessages[assistantMessages.length - 1];
 
   return (
-    <div className="flex gap-3 justify-start">
-      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-surface border border-surface-hover flex items-center justify-center mt-0.5">
+    <div className="flex flex-col gap-2">
+      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-surface border border-surface-hover flex items-center justify-center">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-accent">
           <path d="M4 17L10 11L4 5" />
           <path d="M12 19H20" />
