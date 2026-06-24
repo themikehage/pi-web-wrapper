@@ -41,7 +41,13 @@ app.get(
 );
 
 app.use("/assets/*", serveStatic({ root: "./public" }));
-app.use("/(.*\\.(webmanifest|js|png|ico|svg|css))", serveStatic({ root: "./public" }));
+app.use("/favicon.ico", serveStatic({ root: "./public" }));
+app.use("/favicon.png", serveStatic({ root: "./public" }));
+app.use("/*.webmanifest", serveStatic({ root: "./public" }));
+app.use("/sw.js", serveStatic({ root: "./public" }));
+app.use("/registerSW.js", serveStatic({ root: "./public" }));
+app.use("/icon-*.png", serveStatic({ root: "./public" }));
+app.use("/workbox-*.js", serveStatic({ root: "./public" }));
 app.get("/*", serveStatic({ path: "./public/index.html" }));
 
 const port = parseInt(process.env.PORT ?? "3000");
