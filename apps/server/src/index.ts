@@ -3,6 +3,7 @@ import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { serveStatic } from "hono/bun";
 import { createBunWebSocket } from "hono/bun";
+import { existsSync } from "node:fs";
 import { authRouter } from "./routes/auth";
 import { sessionsRouter } from "./routes/sessions";
 import { filesRouter } from "./routes/files";
@@ -40,14 +41,15 @@ app.get(
   }))
 );
 
+const STATIC_EXTENSIONS = /\.(webmanifest|js|json|png|ico|svg|css)$/;
+
 app.use("/assets/*", serveStatic({ root: "./public" }));
-app.use("/favicon.ico", serveStatic({ root: "./public" }));
-app.use("/favicon.png", serveStatic({ root: "./public" }));
-app.use("/*.webmanifest", serveStatic({ root: "./public" }));
-app.use("/sw.js", serveStatic({ root: "./public" }));
-app.use("/registerSW.js", serveStatic({ root: "./public" }));
-app.use("/icon-*.png", serveStatic({ root: "./public" }));
-app.use("/workbox-*.js", serveStatic({ root: "./public" }));
+app.use(async (c, next) => {
+  if (STATIC_EXTENSIONS.test(c.req.path) && existsSync(`./public${c.req.path}`)) {
+    return serveStatic({ root: "./public" })(c, next);
+  }
+  await next();
+});
 app.get("/*", serveStatic({ path: "./public/index.html" }));
 
 const port = parseInt(process.env.PORT ?? "3000");
