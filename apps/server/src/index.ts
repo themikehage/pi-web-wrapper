@@ -41,8 +41,8 @@ app.get(
 );
 
 app.use("/assets/*", serveStatic({ root: "./public" }));
+app.use("/(.*\\.(webmanifest|js|png|ico|svg|css))", serveStatic({ root: "./public" }));
 app.get("/*", serveStatic({ path: "./public/index.html" }));
-app.get("/favicon.ico", serveStatic({ path: "./public/favicon.ico" }));
 
 const port = parseInt(process.env.PORT ?? "3000");
 
