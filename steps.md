@@ -142,3 +142,10 @@
 - [x] 15.5 Client workspace: Dual-tab RightDrawer container with sliding toggle integration
 - [x] 15.6 Client panel: InfrastructurePanel rendering active bindings form and dynamic Quick Action prompt buttons
 
+---
+
+## Phase 18: PWA Navigation Fix
+- [x] 18.1 Disable SW navigation interception (navigateFallback: undefined in vite.config.ts)
+- [x] 18.2 Rebuild client and server with new SW configuration
+- [x] 18.3 Verify CSS/JS/assets served correctly without SW interference
+

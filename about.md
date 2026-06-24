@@ -34,6 +34,7 @@
 - Apple touch icon + status bar styling for iOS standalone mode
 - Auto-update via `vite-plugin-pwa` with `registerType: "autoUpdate"`
 - Offline-capable assets (JS, CSS, HTML, icons)
+- Navigation interception disabled (`navigateFallback: undefined`) to prevent stale content after deployments; server handles all navigation requests directly
 
 ### Mobile-First Responsive
 - Breakpoints: 375px (base), 768px (sm), 1280px (lg)
