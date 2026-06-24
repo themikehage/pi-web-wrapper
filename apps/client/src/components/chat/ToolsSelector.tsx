@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
+import { Modal } from "@/components/ui/Modal";
 
 export const ALL_TOOLS = [
   { id: "read", name: "Read File", desc: "Read content of files on disk" },
@@ -18,19 +19,6 @@ interface Props {
 
 export function ToolsSelector({ activeTools, onChange, disabled = false }: Props) {
   const [open, setOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    if (open) {
-      document.addEventListener("mousedown", handleClick);
-      return () => document.removeEventListener("mousedown", handleClick);
-    }
-  }, [open]);
 
   const handleToggleTool = (toolId: string) => {
     let next: string[];
@@ -67,7 +55,7 @@ export function ToolsSelector({ activeTools, onChange, disabled = false }: Props
   else if (activeTools.length === 0) statusLabel = "Restricted (0 tools)";
 
   return (
-    <div className="relative inline-block text-left" ref={dropdownRef}>
+    <div className="relative inline-block text-left">
       <button
         onClick={() => !disabled && setOpen(!open)}
         disabled={disabled}
@@ -84,30 +72,31 @@ export function ToolsSelector({ activeTools, onChange, disabled = false }: Props
         </svg>
       </button>
 
-      {open && (
-        <div className="absolute bottom-full left-0 mb-1 w-64 bg-surface border border-surface-hover rounded-lg shadow-lg z-50 overflow-hidden text-xs">
-          <div className="p-3 border-b border-surface-hover flex items-center justify-between">
-            <span className="font-semibold text-text-primary">Allowed Tools</span>
-            <div className="flex gap-2">
-              <button
-                onClick={() => applyPreset("full")}
-                className={`px-1.5 py-0.5 rounded transition-colors cursor-pointer ${
-                  isFullAccess ? "bg-accent/20 text-accent font-semibold" : "text-text-secondary hover:text-text-primary bg-surface-hover"
-                }`}
-              >
-                Full
-              </button>
-              <button
-                onClick={() => applyPreset("readonly")}
-                className={`px-1.5 py-0.5 rounded transition-colors cursor-pointer ${
-                  isReadOnly ? "bg-accent/20 text-accent font-semibold" : "text-text-secondary hover:text-text-primary bg-surface-hover"
-                }`}
-              >
-                Read-Only
-              </button>
-            </div>
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Allowed Tools"
+      >
+        <div className="p-2 bg-surface">
+          <div className="px-1.5 pb-2 flex gap-2 border-b border-surface-hover mb-2">
+            <button
+              onClick={() => applyPreset("full")}
+              className={`px-2 py-0.5 rounded transition-colors cursor-pointer text-xs ${
+                isFullAccess ? "bg-accent/20 text-accent font-semibold" : "text-text-secondary hover:text-text-primary bg-surface-hover"
+              }`}
+            >
+              Full
+            </button>
+            <button
+              onClick={() => applyPreset("readonly")}
+              className={`px-2 py-0.5 rounded transition-colors cursor-pointer text-xs ${
+                isReadOnly ? "bg-accent/20 text-accent font-semibold" : "text-text-secondary hover:text-text-primary bg-surface-hover"
+              }`}
+            >
+              Read-Only
+            </button>
           </div>
-          <div className="max-h-56 overflow-y-auto p-2 space-y-2 bg-surface">
+          <div className="space-y-2">
             {ALL_TOOLS.map((t) => {
               const checked = activeTools.includes(t.id);
               return (
@@ -122,7 +111,7 @@ export function ToolsSelector({ activeTools, onChange, disabled = false }: Props
                     className="mt-0.5 accent-accent"
                   />
                   <div>
-                    <div className="font-semibold text-text-primary font-mono">{t.id}</div>
+                    <div className="font-semibold text-text-primary font-mono text-xs">{t.id}</div>
                     <div className="text-text-secondary/70 text-[10px] leading-snug">{t.desc}</div>
                   </div>
                 </label>
@@ -130,7 +119,7 @@ export function ToolsSelector({ activeTools, onChange, disabled = false }: Props
             })}
           </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }
