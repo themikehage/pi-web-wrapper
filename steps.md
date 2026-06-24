@@ -113,6 +113,15 @@
 
 ---
 
+## Phase 17: PWA (Progressive Web App)
+- [x] 17.1 Install vite-plugin-pwa
+- [x] 17.2 Generate icons (192x192, 512x512) with sharp
+- [x] 17.3 Configure manifest.json (standalone display, theme_color, icons)
+- [x] 17.4 Update index.html with manifest link, theme-color, apple-touch-icon
+- [x] 17.5 Build generates sw.js + service worker registration
+
+---
+
 ## Phase 16: Context Window Meter
 - [x] 16.1 Server: emit `context_usage` via WebSocket after each `message_end`
 - [x] 16.2 Server: handle `compact` and `get_context_usage` WebSocket messages

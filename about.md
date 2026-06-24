@@ -28,6 +28,13 @@
 - Model persistence in localStorage, applied to sessions via SDK's setModel()
 - Auth status indicators (configured/not configured per provider)
 
+### PWA (Progressive Web App)
+- Installable on mobile via manifest.json with `display: standalone`
+- Service worker with Workbox for asset caching (auto-update on new deploy)
+- Apple touch icon + status bar styling for iOS standalone mode
+- Auto-update via `vite-plugin-pwa` with `registerType: "autoUpdate"`
+- Offline-capable assets (JS, CSS, HTML, icons)
+
 ### Mobile-First Responsive
 - Breakpoints: 375px (base), 768px (sm), 1280px (lg)
 - Sidebar: hidden by default on mobile, overlay with backdrop when open
