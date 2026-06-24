@@ -28,17 +28,9 @@ export function SessionSidebar({ activeSessionId, activeRepoName, onSelectSessio
       });
       if (res.ok) {
         const data = await res.json();
-        const list = data.sessions ?? [];
-        setSessions(list);
-        localStorage.setItem("pi-sessions", JSON.stringify(list));
-        return;
+        setSessions(data.sessions ?? []);
       }
     } catch {}
-    const cached = localStorage.getItem("pi-sessions");
-    if (cached) {
-      try { setSessions(JSON.parse(cached)); } catch {}
-    }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -85,7 +77,6 @@ export function SessionSidebar({ activeSessionId, activeRepoName, onSelectSessio
       const session = await res.json();
       const updated = [session, ...sessions];
       setSessions(updated);
-      localStorage.setItem("pi-sessions", JSON.stringify(updated));
       onNewSession(session.id);
     } finally {
       setCreating(false);
@@ -112,7 +103,6 @@ export function SessionSidebar({ activeSessionId, activeRepoName, onSelectSessio
       });
       const remaining = sessions.filter((s) => s.id !== id);
       setSessions(remaining);
-      localStorage.setItem("pi-sessions", JSON.stringify(remaining));
 
       const filteredRemaining = remaining.filter((s) =>
         activeRepoName ? s.repoName === activeRepoName : !s.repoName
