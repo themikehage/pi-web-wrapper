@@ -122,11 +122,161 @@ El método más robusto y mantenible:
 
 ---
 
-## 9. CLI / API Docs para el workspace
+## 9. API Reference para el agente
 
-Documentación (tutorial o sección en UI) que enseñe a los usuarios:
+Documentación estructurada de toda la API para que el agente pueda ejecutar operaciones contra el backend. Autenticación vía `Authorization: Bearer <token>` (excepto login y health). El token se obtiene de `localStorage.getItem("token")`.
 
-- Cómo está estructurado su workspace
-- Cómo hacer peticiones directas a la API del backend
-- Cómo usar los endpoints de sesiones, archivos, integraciones
-- Ejemplos con curl para automatizar tareas fuera de la UI
+---
+
+### Auth — `/api/auth`
+
+| Método | Path | Descripción | Body |
+|--------|------|-------------|------|
+| POST | `/api/auth/login` | Login, devuelve JWT | `{ username, password }` |
+| POST | `/api/auth/password` | Cambiar contraseña | `{ currentPassword, newPassword }` |
+| GET | `/api/auth/me` | Info del usuario autenticado | — |
+
+---
+
+### Sesiones — `/api/sessions`
+
+| Método | Path | Descripción | Body / Params |
+|--------|------|-------------|---------------|
+| GET | `/api/sessions` | Listar sesiones | — |
+| POST | `/api/sessions` | Crear sesión | `{ name, repoName? }` |
+| PATCH | `/api/sessions/:id` | Renombrar | `{ name }` |
+| DELETE | `/api/sessions/:id` | Eliminar sesión | — |
+| GET | `/api/sessions/:id/messages` | Mensajes de la sesión | — |
+| POST | `/api/sessions/:id/prompt` | Enviar prompt (REST) | `{ message }` |
+| POST | `/api/sessions/:id/abort` | Abortar generación | — |
+| POST | `/api/sessions/:id/navigate` | Navegar árbol de mensajes | `{ targetId }` |
+| POST | `/api/sessions/:id/model` | Cambiar modelo | `{ provider, modelId, thinkingLevel? }` |
+| GET | `/api/sessions/:id/context` | Uso de contexto | — |
+| GET | `/api/sessions/:id/skills` | Skills activas de la sesión | — |
+| GET | `/api/sessions/:id/tools` | Tools activas | — |
+| POST | `/api/sessions/:id/tools` | Setear tools | `{ tools: string[] }` |
+| GET | `/api/sessions/:id/tasks` | Estado del task runner | — |
+| POST | `/api/sessions/:id/tasks` | Guardar tasks | `{ tasks }` |
+| POST | `/api/sessions/:id/tasks/decompose` | Descomponer objetivo | `{ objective }` |
+| POST | `/api/sessions/:id/tasks/run` | Ejecutar tasks | — |
+| POST | `/api/sessions/:id/tasks/pause` | Pausar tasks | — |
+| POST | `/api/sessions/:id/tasks/reset` | Resetear tasks | — |
+
+---
+
+### Providers — `/api/providers`
+
+| Método | Path | Descripción | Body |
+|--------|------|-------------|------|
+| GET | `/api/providers` | Listar providers con estado de auth | — |
+| GET | `/api/providers/:id/models` | Modelos de un provider | — |
+| POST | `/api/providers/:id/key` | Setear API key | `{ apiKey }` |
+| DELETE | `/api/providers/:id/key` | Eliminar API key | — |
+
+---
+
+### Models — `/api/models`
+
+| Método | Path | Descripción |
+|--------|------|-------------|
+| GET | `/api/models` | Modelos disponibles (configurados + autenticados) |
+
+---
+
+### Workspace / Archivos — `/api/workspace`
+
+Soporta `?repo=nombre` para operar dentro de un repositorio específico.
+
+| Método | Path | Descripción | Body / Query |
+|--------|------|-------------|-------------|
+| GET | `/api/workspace` | Listar raíz del workspace | `?repo=` |
+| GET | `/api/workspace/*` | Leer archivo o directorio | `?repo=`, `?raw=1`, `?download=1` |
+| PUT | `/api/workspace` | Crear archivo/carpeta en raíz | `{ type:"file"|"folder", content? }` + `?repo=` |
+| PUT | `/api/workspace/*` | Crear archivo/carpeta en subruta | `{ type, content? }` + `?repo=` |
+| POST | `/api/workspace` | Subir archivo (multipart) a raíz | `FormData(file)` + `?repo=` |
+| POST | `/api/workspace/*` | Subir archivo (multipart) a subruta | `FormData(file)` + `?repo=` |
+| DELETE | `/api/workspace` | Eliminar archivo/carpeta en raíz | `?repo=` |
+| DELETE | `/api/workspace/*` | Eliminar archivo/carpeta en subruta | `?repo=` |
+| PATCH | `/api/workspace` | Renovar/mover en raíz | `{ newPath }` + `?repo=` |
+| PATCH | `/api/workspace/*` | Renovar/mover en subruta | `{ newPath }` + `?repo=` |
+
+### Workspace Repos — `/api/workspace-repos`
+
+| Método | Path | Descripción | Body |
+|--------|------|-------------|------|
+| GET | `/api/workspace-repos` | Listar repos del usuario | — |
+| POST | `/api/workspace-repos` | Crear o clonar repo | `{ name, cloneUrl? }` |
+
+### Session Files (legacy) — `/api/sessions/:sessionId/files/*`
+
+| Método | Path | Descripción |
+|--------|------|-------------|
+| GET | `/api/sessions/:sessionId/files/*` | Stream de archivos de sesión (compatibilidad) |
+
+---
+
+### Integrations — `/api/integrations`
+
+| Método | Path | Descripción | Body |
+|--------|------|-------------|------|
+| GET | `/api/integrations/templates` | Templates de integraciones | — |
+| POST | `/api/integrations/templates` | Guardar templates | `{ templates }` |
+| GET | `/api/integrations/bindings/:repoName` | Bindings de un repo | — |
+| POST | `/api/integrations/bindings/:repoName` | Guardar bindings | `Record<string, string>` |
+
+---
+
+### Skills — `/api/skills`
+
+| Método | Path | Descripción |
+|--------|------|-------------|
+| GET | `/api/skills` | Skills globales del workspace |
+
+---
+
+### Environment Variables — `/api/env`
+
+| Método | Path | Descripción | Body / Query |
+|--------|------|-------------|-------------|
+| GET | `/api/env` | Listar env vars (valores ocultos) | `?reveal=true` |
+| POST | `/api/env` | Setear una env var | `{ key, value }` |
+| PUT | `/api/env` | Bulk replace env vars | `{ variables: Record<string, string> }` |
+| DELETE | `/api/env/:key` | Eliminar env var | — |
+
+---
+
+### Health — `/api/health`
+
+| Método | Path | Descripción |
+|--------|------|-------------|
+| GET | `/api/health` | Health check |
+
+---
+
+### WebSocket — `/ws`
+
+**Conexión:** `new WebSocket("/ws")`, luego enviar `{ type: "auth", token, sessionId? }`.
+
+**Mensajes Cliente → Servidor:**
+
+| Type | Descripción | Payload |
+|------|-------------|---------|
+| `auth` | Autenticar conexión | `{ token, sessionId? }` |
+| `prompt` | Enviar prompt (streaming) | `{ sessionId, message, tools? }` |
+| `steer` | Intervenir generación activa | `{ sessionId, message }` |
+| `follow_up` | Enviar follow-up | `{ sessionId, message }` |
+| `abort` | Abortar generación | `{ sessionId }` |
+| `compact` | Compactar contexto | `{ sessionId }` |
+| `get_context_usage` | Pedir uso de contexto | `{ sessionId }` |
+
+**Mensajes Servidor → Cliente:**
+
+| Type | Descripción |
+|------|-------------|
+| `auth_success` / `auth_error` | Resultado de autenticación |
+| `agent_start` / `agent_end` | Inicio/fin de ejecución del agente |
+| `message_start` / `message_update` / `message_end` | Eventos de streaming de mensajes |
+| `context_usage` | Uso de contexto actual |
+| `session_status` | Cambio de estado de sesión (`streaming`/`active`) |
+| `agent_error` | Error del agente |
+| `aborted` | Confirmación de aborto |
