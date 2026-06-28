@@ -3,6 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { LoginPage } from "@/pages/LoginPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { SkillsPage } from "@/pages/SkillsPage";
+import { AgentsPage } from "@/pages/AgentsPage";
 import { WorkspacePanel } from "@/components/workspace/WorkspacePanel";
 import { ChatArea } from "@/components/chat/ChatArea";
 import { PreviewPanel } from "@/components/preview/PreviewPanel";
@@ -67,6 +68,9 @@ export function AppRouter() {
       )}
       {route.page === "skills" && (
         <SkillsPage />
+      )}
+      {route.page === "agents" && (
+        <AgentsPage />
       )}
       {route.page === "workspace" && (
         <WorkspacePanel key={activeRepoName || "global"} activeRepoName={activeRepoName} />
