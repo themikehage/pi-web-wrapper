@@ -171,3 +171,27 @@ export interface FileUploadResult {
   mimeType: string;
 }
 
+export const AgentDefinitionSchema = z.object({
+  id: z.string().min(1).regex(/^[a-z0-9-]+$/, "id must be lowercase alphanumeric with dashes"),
+  name: z.string().min(1),
+  role: z.string().min(1),
+  systemPrompt: z.string().min(1),
+  model: z.string().optional(),
+  skills: z.array(z.string()).optional(),
+  port: z.number().int().min(1024).max(65535).optional(),
+});
+export type AgentDefinition = z.infer<typeof AgentDefinitionSchema>;
+
+export const AgentStatusSchema = z.enum(["starting", "idle", "streaming", "error", "stopped"]);
+export type AgentStatus = z.infer<typeof AgentStatusSchema>;
+
+export const AgentInfoSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  role: z.string(),
+  status: AgentStatusSchema,
+  port: z.number().optional(),
+  createdAt: z.string(),
+});
+export type AgentInfo = z.infer<typeof AgentInfoSchema>;
+

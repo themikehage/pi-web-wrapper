@@ -1,8 +1,15 @@
 node_modules
 dist
 .vite
+*.tsbuildinfo
 bun.lockb
 .env
 .env.*
 /pi
 /opencode-manager
+skills/
+/autoconsulting
+# Local Pi runtime state
+.atl/
+/fast-qwen
+/openspec
