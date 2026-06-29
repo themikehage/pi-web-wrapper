@@ -2,8 +2,6 @@ import { SessionSidebar } from "@/components/sidebar/SessionSidebar";
 import { useState, useCallback, useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import type { Route } from "@/hooks/useRouter";
-import type { ChannelMember, AgentInfo, AddMember, UpdateMember } from "shared";
-import { ChannelMembersModal } from "@/components/channels/ChannelMembersModal";
 
 interface Props {
   route: Route;
@@ -16,67 +14,7 @@ interface Props {
 
 export function MainLayout({ route, onNavigate, activeRepoName, activeAgent, activeChannel = null, children }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [showMembersModal, setShowMembersModal] = useState(false);
-  const [channelMembers, setChannelMembers] = useState<ChannelMember[]>([]);
-  const [registeredAgents, setRegisteredAgents] = useState<AgentInfo[]>([]);
   const pendingWorkspaceFile = useRef<string | null>(null);
-
-  const fetchChannelData = useCallback(async () => {
-    if (!activeChannel) return;
-    const token = localStorage.getItem("token");
-    try {
-      const [chRes, agRes] = await Promise.all([
-        fetch(`/api/channels/${activeChannel.id}`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch("/api/agents", { headers: { Authorization: `Bearer ${token}` } }),
-      ]);
-      if (chRes.ok) {
-        const data = await chRes.json();
-        setChannelMembers(data.channel.members || []);
-      }
-      if (agRes.ok) {
-        const data = await agRes.json();
-        setRegisteredAgents(data.agents || []);
-      }
-    } catch {}
-  }, [activeChannel]);
-
-  useEffect(() => {
-    if (showMembersModal) {
-      fetchChannelData();
-    }
-  }, [showMembersModal, fetchChannelData]);
-
-  const handleAddMember = async (data: AddMember) => {
-    if (!activeChannel) return;
-    const token = localStorage.getItem("token");
-    await fetch(`/api/channels/${activeChannel.id}/members`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify(data),
-    });
-    await fetchChannelData();
-  };
-
-  const handleUpdateMember = async (agentId: string, data: UpdateMember) => {
-    if (!activeChannel) return;
-    const token = localStorage.getItem("token");
-    await fetch(`/api/channels/${activeChannel.id}/members/${agentId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify(data),
-    });
-    await fetchChannelData();
-  };
-
-  const handleRemoveMember = async (agentId: string) => {
-    if (!activeChannel) return;
-    const token = localStorage.getItem("token");
-    await fetch(`/api/channels/${activeChannel.id}/members/${agentId}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    await fetchChannelData();
-  };
 
   useEffect(() => {
     const handleOpenWorkspace = (e: Event) => {
@@ -178,18 +116,6 @@ export function MainLayout({ route, onNavigate, activeRepoName, activeAgent, act
           </span>
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
-          {activeChannel && (
-            <button
-              onClick={() => setShowMembersModal(true)}
-              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium bg-purple-400/10 text-purple-400 border border-purple-400/30 rounded-lg hover:bg-purple-400/20 transition-colors"
-              title="Gestionar miembros del canal"
-            >
-              <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
-              </svg>
-              <span>Miembros</span>
-            </button>
-          )}
           <button
             onClick={() => onNavigate("/projects")}
             className={`p-1 cursor-pointer transition-colors ${
@@ -311,18 +237,6 @@ export function MainLayout({ route, onNavigate, activeRepoName, activeAgent, act
           {children}
         </main>
       </div>
-
-      {showMembersModal && activeChannel && (
-        <ChannelMembersModal
-          channelName={activeChannel.name}
-          members={channelMembers}
-          registeredAgents={registeredAgents}
-          onClose={() => setShowMembersModal(false)}
-          onAddMember={handleAddMember}
-          onUpdateMember={handleUpdateMember}
-          onRemoveMember={handleRemoveMember}
-        />
-      )}
     </div>
   );
 }

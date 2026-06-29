@@ -5,9 +5,10 @@ interface Props {
   channel: Channel;
   onOpen: (id: string) => void;
   onDelete: (id: string) => void;
+  onManageMembers?: (channel: Channel) => void;
 }
 
-export function ChannelCard({ channel, onOpen, onDelete }: Props) {
+export function ChannelCard({ channel, onOpen, onDelete, onManageMembers }: Props) {
   return (
     <motion.div
       layout
@@ -15,8 +16,7 @@ export function ChannelCard({ channel, onOpen, onDelete }: Props) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.96 }}
       transition={{ duration: 0.2 }}
-      className="bg-surface border border-surface-hover rounded-xl p-4 flex flex-col gap-3 hover:border-accent/20 transition-colors cursor-pointer"
-      onClick={() => onOpen(channel.id)}
+      className="bg-surface border border-surface-hover rounded-xl p-4 flex flex-col gap-3 hover:border-accent/20 transition-colors"
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2.5 min-w-0">
@@ -44,14 +44,37 @@ export function ChannelCard({ channel, onOpen, onDelete }: Props) {
         </button>
       </div>
 
-      <div className="flex items-center justify-between pt-1 border-t border-surface-hover/50 text-xs text-text-secondary">
+      <div className="flex items-center justify-between pt-1 text-xs text-text-secondary">
         <span className="flex items-center gap-1">
           <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor" className="opacity-70">
             <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
           </svg>
-          {channel.members.length} {channel.members.length === 1 ? "agent" : "agents"}
+          {channel.members.length} {channel.members.length === 1 ? "agente" : "agentes"}
         </span>
-        <span>Updated {new Date(channel.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+        <span>{new Date(channel.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+      </div>
+
+      <div className="flex items-center gap-2 pt-2 border-t border-surface-hover/50">
+        <button
+          onClick={() => onOpen(channel.id)}
+          className="flex-1 py-1.5 px-3 text-xs font-medium bg-accent/10 text-accent border border-accent/20 rounded-lg hover:bg-accent/20 transition-colors"
+        >
+          Abrir Chat
+        </button>
+        {onManageMembers && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onManageMembers(channel);
+            }}
+            className="py-1.5 px-3 text-xs font-medium bg-purple-400/10 text-purple-400 border border-purple-400/20 rounded-lg hover:bg-purple-400/20 transition-colors flex items-center gap-1"
+          >
+            <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+            </svg>
+            Miembros ({channel.members.length})
+          </button>
+        )}
       </div>
     </motion.div>
   );

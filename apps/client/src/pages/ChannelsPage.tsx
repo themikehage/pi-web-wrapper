@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useChannels } from "@/hooks/useChannels";
 import { ChannelCard } from "@/components/channels/ChannelCard";
-import type { CreateChannel } from "shared";
+import { ChannelMembersModal } from "@/components/channels/ChannelMembersModal";
+import type { Channel, ChannelMember, AgentInfo, AddMember, UpdateMember, CreateChannel } from "shared";
 
 function CreateChannelModal({
   onClose,
@@ -102,7 +103,6 @@ function CreateChannelModal({
     </div>
   );
 }
-
 interface Props {
   onNavigate: (path: string) => void;
   onSelectChannel?: (channel: { id: string; name: string }) => void;
@@ -111,6 +111,68 @@ interface Props {
 export function ChannelsPage({ onNavigate, onSelectChannel }: Props) {
   const { channels, loading, error, fetchChannels, createChannel, deleteChannel } = useChannels();
   const [showCreate, setShowCreate] = useState(false);
+  const [managingChannel, setManagingChannel] = useState<Channel | null>(null);
+  const [channelMembers, setChannelMembers] = useState<ChannelMember[]>([]);
+  const [registeredAgents, setRegisteredAgents] = useState<AgentInfo[]>([]);
+
+  const loadChannelDetails = useCallback(async (channelId: string) => {
+    const token = localStorage.getItem("token");
+    try {
+      const [chRes, agRes] = await Promise.all([
+        fetch(`/api/channels/${channelId}`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch("/api/agents", { headers: { Authorization: `Bearer ${token}` } }),
+      ]);
+      if (chRes.ok) {
+        const data = await chRes.json();
+        setChannelMembers(data.members || data.channel?.members || []);
+      }
+      if (agRes.ok) {
+        const data = await agRes.json();
+        setRegisteredAgents(data.agents || []);
+      }
+    } catch {}
+  }, []);
+
+  const handleOpenMembers = (channel: Channel) => {
+    setManagingChannel(channel);
+    setChannelMembers(channel.members || []);
+    loadChannelDetails(channel.id);
+  };
+
+  const handleAddMember = async (data: AddMember) => {
+    if (!managingChannel) return;
+    const token = localStorage.getItem("token");
+    await fetch(`/api/channels/${managingChannel.id}/members`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify(data),
+    });
+    await loadChannelDetails(managingChannel.id);
+    await fetchChannels();
+  };
+
+  const handleUpdateMember = async (agentId: string, data: UpdateMember) => {
+    if (!managingChannel) return;
+    const token = localStorage.getItem("token");
+    await fetch(`/api/channels/${managingChannel.id}/members/${agentId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify(data),
+    });
+    await loadChannelDetails(managingChannel.id);
+    await fetchChannels();
+  };
+
+  const handleRemoveMember = async (agentId: string) => {
+    if (!managingChannel) return;
+    const token = localStorage.getItem("token");
+    await fetch(`/api/channels/${managingChannel.id}/members/${agentId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    await loadChannelDetails(managingChannel.id);
+    await fetchChannels();
+  };
 
   return (
     <div className="h-full flex flex-col bg-bg overflow-hidden">
@@ -192,6 +254,7 @@ export function ChannelsPage({ onNavigate, onSelectChannel }: Props) {
                     }
                   }}
                   onDelete={deleteChannel}
+                  onManageMembers={handleOpenMembers}
                 />
               ))}
             </AnimatePresence>
@@ -211,6 +274,20 @@ export function ChannelsPage({ onNavigate, onSelectChannel }: Props) {
                 onNavigate(`/channel/${ch.id}`);
               }
             }}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {managingChannel && (
+          <ChannelMembersModal
+            channelName={managingChannel.name}
+            members={channelMembers}
+            registeredAgents={registeredAgents}
+            onClose={() => setManagingChannel(null)}
+            onAddMember={handleAddMember}
+            onUpdateMember={handleUpdateMember}
+            onRemoveMember={handleRemoveMember}
           />
         )}
       </AnimatePresence>
