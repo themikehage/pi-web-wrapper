@@ -13,8 +13,6 @@ import { streamSSE } from "hono/streaming";
 import type { AgentDefinition } from "shared";
 import type { AgentServer } from "./types";
 
-import { piSessionManager } from "../pi/session-manager";
-
 function ensureAgentWorkspace(id: string): string {
   const dir = `/tmp/pi-agents/${id}`;
   const subdirs = [
@@ -34,6 +32,7 @@ export async function createAgentServer(definition: AgentDefinition, username = 
 
   if (!existsSync(sessionDir)) mkdirSync(sessionDir, { recursive: true });
 
+  const { piSessionManager } = await import("../pi/session-manager");
   const { authStorage, modelRegistry } = piSessionManager.getUserContext(username);
   modelRegistry.refresh();
 

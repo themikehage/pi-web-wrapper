@@ -12,7 +12,6 @@ import {
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve, dirname } from "node:path";
 import { AVAILABLE_TOOLS } from "shared";
-import { agentRegistry } from "../agents";
 
 export function getResolvedSkillPaths(cwd: string): string[] {
   const paths: string[] = [];
@@ -225,8 +224,12 @@ class PiSessionManager {
 
     const { authStorage, modelRegistry } = this.getUserContext(username);
 
-    const agentEntry = resolvedAgentId ? agentRegistry.get(resolvedAgentId) : undefined;
-    const agentDef = agentEntry?.server.definition;
+    let agentDef;
+    if (resolvedAgentId) {
+      const { agentRegistry } = await import("../agents");
+      const agentEntry = agentRegistry.get(resolvedAgentId);
+      agentDef = agentEntry?.server.definition;
+    }
 
     const skillPaths = getResolvedSkillPaths(workspaceDir);
     if (agentDef?.skills && agentDef.skills.length > 0) {
