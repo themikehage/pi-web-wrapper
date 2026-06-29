@@ -234,3 +234,9 @@
 - [x] 26.5 `apps/client/src/components/channels/ChannelMembersModal.tsx` — Built floating modal for channel member management with explicit agent selection when `targeted` replyMode is chosen
 - [x] 26.6 Integration in `MainLayout.tsx` — Added "Miembros" button in header when in channel mode to trigger `ChannelMembersModal`
 - [x] 26.7 Verification — TypeScript compilation passes clean (EXIT 0) for server and client
+
+## Phase 27: Modular ChannelChatArea Architecture
+- [x] 27.1 `apps/client/src/components/channels/ChannelMessageList.tsx` — Specialized multi-agent message list with agent badges, avatars, streaming deltas, and `RichMarkdown`
+- [x] 27.2 `apps/client/src/components/channels/ChannelChatArea.tsx` — Dedicated channel chat container managing channel WS events, multi-agent state, channel header with members modal, and shared input area
+- [x] 27.3 `apps/client/src/components/layout/AppRouter.tsx` — Routed `route.page === "chat"` to `ChannelChatArea` when `activeChannel` is active
+- [x] 27.4 Verification — TypeScript compilation passes clean (EXIT 0) for server and client

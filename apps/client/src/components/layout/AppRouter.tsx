@@ -8,6 +8,7 @@ import { ChannelsPage } from "@/pages/ChannelsPage";
 import { ChannelDetailPage } from "@/pages/ChannelDetailPage";
 import { WorkspacePanel } from "@/components/workspace/WorkspacePanel";
 import { ChatArea } from "@/components/chat/ChatArea";
+import { ChannelChatArea } from "@/components/channels/ChannelChatArea";
 import { PreviewPanel } from "@/components/preview/PreviewPanel";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { useRouter } from "@/hooks/useRouter";
@@ -140,16 +141,24 @@ export function AppRouter() {
         <WorkspacePanel key={activeRepoName || "global"} activeRepoName={activeRepoName} />
       )}
       {route.page === "chat" && (
-        <ChatArea
-          key={`${route.sessionId}-${activeRepoName}-${activeAgent?.id}-${activeChannel?.id}`}
-          sessionId={route.sessionId}
-          activeRepoName={activeRepoName}
-          activeChannel={activeChannel}
-        />
+        activeChannel ? (
+          <ChannelChatArea
+            key={`${route.sessionId}-${activeChannel.id}`}
+            activeChannel={activeChannel}
+            sessionId={route.sessionId}
+          />
+        ) : (
+          <ChatArea
+            key={`${route.sessionId}-${activeRepoName}-${activeAgent?.id}`}
+            sessionId={route.sessionId}
+            activeRepoName={activeRepoName}
+          />
+        )
       )}
       {route.page === "preview" && (
         <PreviewPanel activeRepoName={activeRepoName} />
       )}
     </MainLayout>
+
   );
 }
