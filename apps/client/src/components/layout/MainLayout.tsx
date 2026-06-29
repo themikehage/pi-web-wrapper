@@ -65,34 +65,89 @@ export function MainLayout({ route, onNavigate, activeRepoName, activeAgent, act
   const isChat = route.page === "chat";
   const sessionId = route.page === "chat" ? route.sessionId : null;
 
-  const getPageName = () => {
-    const contextName = activeChannel
+  const renderBreadcrumbs = () => {
+    let items: { label: string; path?: string }[] = [];
+
+    const contextLabel = activeChannel
       ? `Channel: #${activeChannel.name}`
       : activeAgent
       ? `Agent: ${activeAgent.name}`
       : activeRepoName
       ? `${activeRepoName}`
       : "Global";
+
     switch (route.page) {
       case "projects":
-        return "Proyectos";
+        items = [{ label: "Proyectos", path: "/projects" }];
+        break;
       case "settings":
-        return `Settings [${contextName}]`;
+        items = [{ label: "Settings", path: "/settings" }];
+        if (contextLabel) items.push({ label: contextLabel });
+        break;
       case "skills":
-        return `Skills [${contextName}]`;
+        items = [{ label: "Skills", path: "/skills" }];
+        if (contextLabel) items.push({ label: contextLabel });
+        break;
       case "workspace":
-        return `Workspace [${contextName}]`;
+        items = [{ label: "Workspace", path: "/workspace" }];
+        if (contextLabel) items.push({ label: contextLabel });
+        break;
       case "preview":
-        return `Preview [${activeRepoName || "?"}]`;
+        items = [{ label: "Preview", path: "/preview" }];
+        if (activeRepoName) items.push({ label: activeRepoName });
+        break;
       case "agents":
-        return "Agents";
+        items = [{ label: "Agents", path: "/agents" }];
+        break;
       case "channels":
-        return "Channels";
+        items = [{ label: "Channels", path: "/channels" }];
+        break;
       case "channel":
-        return "Channel";
+        items = [{ label: "Channels", path: "/channels" }];
+        if (activeChannel) {
+          items.push({ label: `#${activeChannel.name}` });
+        }
+        break;
       default:
-        return `Chat [${contextName}]`;
+        // "chat"
+        items = [{ label: "Chat", path: "/" }];
+        if (contextLabel) {
+          items.push({ label: contextLabel });
+        }
+        break;
     }
+
+    return (
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1 sm:gap-1.5 text-xs sm:text-sm">
+        <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-accent inline-block flex-shrink-0" />
+        {items.map((item, index) => {
+          const isLast = index === items.length - 1;
+          return (
+            <div key={index} className="flex items-center gap-1 sm:gap-1.5">
+              {index > 0 && (
+                <span className="text-text-secondary/60 font-normal select-none px-0.5 sm:px-1">/</span>
+              )}
+              {item.path && !isLast ? (
+                <button
+                  onClick={() => onNavigate(item.path!)}
+                  className="text-text-secondary hover:text-text-primary transition-colors font-medium cursor-pointer"
+                >
+                  {item.label}
+                </button>
+              ) : (
+                <span
+                  className={`${
+                    isLast ? "font-semibold text-text-primary" : "text-text-secondary font-medium"
+                  }`}
+                >
+                  {item.label}
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </nav>
+    );
   };
 
   return (
@@ -110,10 +165,7 @@ export function MainLayout({ route, onNavigate, activeRepoName, activeAgent, act
               </svg>
             </button>
           )}
-          <span className="font-semibold text-xs sm:text-sm text-text-primary flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-accent inline-block" />
-            {getPageName()}
-          </span>
+          {renderBreadcrumbs()}
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
           <button

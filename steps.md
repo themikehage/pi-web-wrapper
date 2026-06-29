@@ -240,3 +240,8 @@
 - [x] 27.2 `apps/client/src/components/channels/ChannelChatArea.tsx` — Dedicated channel chat container managing channel WS events, multi-agent state, channel header with members modal, and shared input area
 - [x] 27.3 `apps/client/src/components/layout/AppRouter.tsx` — Routed `route.page === "chat"` to `ChannelChatArea` when `activeChannel` is active
 - [x] 27.4 Verification — TypeScript compilation passes clean (EXIT 0) for server and client
+
+## Phase 28: Topbar Breadcrumbs Navigation
+- [x] 28.1 `apps/client/src/components/layout/MainLayout.tsx` — Refactored topbar title header into modular breadcrumb navigation separated by `/` slashes (`Chat / Agent: AgentName`, `Chat / Channel: #channelName`, etc.) with interactive route navigation.
+- [x] 28.2 Verification — TypeScript compilation passes clean (EXIT 0) for client build.
+
