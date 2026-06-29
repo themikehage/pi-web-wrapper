@@ -88,6 +88,7 @@ type SessionListItem = {
   status?: "active" | "streaming" | "task-running" | "sleeping";
   repoName?: string;
   agentId?: string;
+  channelId?: string;
 };
 
 class PiSessionManager {
@@ -159,7 +160,8 @@ class PiSessionManager {
     username: string,
     sessionId: string,
     repoName?: string,
-    agentId?: string
+    agentId?: string,
+    channelId?: string
   ): Promise<AgentSession> {
     const key = this.getSessionKey(username, sessionId);
     const existing = this.sessions.get(key);
@@ -172,27 +174,31 @@ class PiSessionManager {
       mkdirSync(sessionDir, { recursive: true });
     }
 
-    // Persistir metadatos de sesión (guardar y leer metadata.json con repoName y agentId)
+    // Persistir metadatos de sesión (guardar y leer metadata.json con repoName, agentId y channelId)
     const metadataPath = join(sessionDir, "metadata.json");
     let resolvedRepoName = repoName;
     let resolvedAgentId = agentId;
+    let resolvedChannelId = channelId;
     let persistedTools: string[] | undefined;
 
-    if (repoName || agentId) {
+    if (repoName || agentId || channelId) {
       const existingMeta = existsSync(metadataPath)
         ? (() => { try { return JSON.parse(readFileSync(metadataPath, "utf-8")); } catch { return {}; } })()
         : {};
       const updatedMeta = { ...existingMeta };
       if (repoName !== undefined) updatedMeta.repoName = repoName;
       if (agentId !== undefined) updatedMeta.agentId = agentId;
+      if (channelId !== undefined) updatedMeta.channelId = channelId;
       writeFileSync(metadataPath, JSON.stringify(updatedMeta, null, 2), "utf-8");
       resolvedRepoName = updatedMeta.repoName;
       resolvedAgentId = updatedMeta.agentId;
+      resolvedChannelId = updatedMeta.channelId;
     } else if (existsSync(metadataPath)) {
       try {
         const metadata = JSON.parse(readFileSync(metadataPath, "utf-8"));
         resolvedRepoName = metadata.repoName;
         resolvedAgentId = metadata.agentId;
+        resolvedChannelId = metadata.channelId;
         persistedTools = Array.isArray(metadata.tools) ? metadata.tools : undefined;
       } catch (e) {
         console.error(`Failed to read metadata.json for session ${sessionId}:`, e);
@@ -202,10 +208,12 @@ class PiSessionManager {
     // Asegurar estructura de carpetas
     ensureWorkspaceStructure(username);
 
-    // Asignar cwd dinámicamente según el contexto (Repo vs Agent vs Global)
+    // Asignar cwd dinámicamente según el contexto (Repo vs Agent vs Channel vs Global)
     const workspaceBase = join(userDir, "workspace");
     let workspaceDir = workspaceBase;
-    if (resolvedAgentId) {
+    if (resolvedChannelId) {
+      workspaceDir = `/tmp/pi-channels/${resolvedChannelId}/workspace`;
+    } else if (resolvedAgentId) {
       workspaceDir = `/tmp/pi-agents/${resolvedAgentId}/workspace`;
     } else if (resolvedRepoName) {
       workspaceDir = resolve(workspaceBase, "repos", resolvedRepoName);
@@ -437,6 +445,7 @@ class PiSessionManager {
         status,
         repoName: metadata.repoName as string | undefined,
         agentId: metadata.agentId as string | undefined,
+        channelId: metadata.channelId as string | undefined,
       });
     }
 

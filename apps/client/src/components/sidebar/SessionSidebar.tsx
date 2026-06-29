@@ -10,12 +10,14 @@ interface SessionItem {
   status?: SessionStatus;
   repoName?: string;
   agentId?: string;
+  channelId?: string;
 }
 
 interface Props {
   activeSessionId: string | null;
   activeRepoName: string | null;
   activeAgent: { id: string; name: string } | null;
+  activeChannel: { id: string; name: string } | null;
   onSelectSession: (id: string) => void;
   onNewSession: (id: string) => void;
 }
@@ -27,7 +29,7 @@ const statusConfig: Record<SessionStatus, { color: string; label: string }> = {
   sleeping: { color: "bg-text-secondary/30", label: "Sleeping" },
 };
 
-export function SessionSidebar({ activeSessionId, activeRepoName, activeAgent, onSelectSession, onNewSession }: Props) {
+export function SessionSidebar({ activeSessionId, activeRepoName, activeAgent, activeChannel, onSelectSession, onNewSession }: Props) {
   const [sessions, setSessions] = useState<SessionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -77,11 +79,12 @@ export function SessionSidebar({ activeSessionId, activeRepoName, activeAgent, o
 
   const filteredSessions = useMemo(() => {
     return sessions.filter((s) => {
-      if (activeAgent) return s.agentId === activeAgent.id;
-      if (activeRepoName) return s.repoName === activeRepoName && !s.agentId;
-      return !s.repoName && !s.agentId;
+      if (activeChannel) return s.channelId === activeChannel.id;
+      if (activeAgent) return s.agentId === activeAgent.id && !s.channelId;
+      if (activeRepoName) return s.repoName === activeRepoName && !s.agentId && !s.channelId;
+      return !s.repoName && !s.agentId && !s.channelId;
     });
-  }, [sessions, activeRepoName, activeAgent]);
+  }, [sessions, activeRepoName, activeAgent, activeChannel]);
 
   useEffect(() => {
     if (loading || activeSessionId || creating) return;
@@ -98,7 +101,9 @@ export function SessionSidebar({ activeSessionId, activeRepoName, activeAgent, o
     try {
       const token = localStorage.getItem("token");
       const sessionCount = filteredSessions.length;
-      const sessionName = activeAgent
+      const sessionName = activeChannel
+        ? `#${activeChannel.name} - Session ${sessionCount + 1}`
+        : activeAgent
         ? `${activeAgent.name} - Session ${sessionCount + 1}`
         : activeRepoName
         ? `${activeRepoName} - Session ${sessionCount + 1}`
@@ -112,8 +117,9 @@ export function SessionSidebar({ activeSessionId, activeRepoName, activeAgent, o
         },
         body: JSON.stringify({
           name: sessionName,
-          repoName: activeAgent ? undefined : (activeRepoName || undefined),
-          agentId: activeAgent ? activeAgent.id : undefined,
+          repoName: (activeAgent || activeChannel) ? undefined : (activeRepoName || undefined),
+          agentId: (activeChannel) ? undefined : (activeAgent ? activeAgent.id : undefined),
+          channelId: activeChannel ? activeChannel.id : undefined,
         }),
       });
       if (!res.ok) return;
@@ -124,7 +130,7 @@ export function SessionSidebar({ activeSessionId, activeRepoName, activeAgent, o
     } finally {
       setCreating(false);
     }
-  }, [filteredSessions.length, activeRepoName, activeAgent, onNewSession, sessions]);
+  }, [filteredSessions.length, activeRepoName, activeAgent, activeChannel, onNewSession, sessions]);
 
   const deleteSession = useCallback(
     async (id: string) => {

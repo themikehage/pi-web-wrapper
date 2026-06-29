@@ -17,7 +17,7 @@ export function AppRouter() {
   const { token, user, loading } = useAuth();
   const { route, navigate } = useRouter();
 
-  // Cargar el repo o agente activo y el estado de contexto desde localStorage
+  // Cargar el repo, agente o canal activo y el estado de contexto desde localStorage
   const [activeRepoName, setActiveRepoName] = useState<string | null>(() => {
     return localStorage.getItem("active-repo") || null;
   });
@@ -25,6 +25,15 @@ export function AppRouter() {
   const [activeAgent, setActiveAgent] = useState<{ id: string; name: string } | null>(() => {
     try {
       const stored = localStorage.getItem("active-agent");
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [activeChannel, setActiveChannel] = useState<{ id: string; name: string } | null>(() => {
+    try {
+      const stored = localStorage.getItem("active-channel");
       return stored ? JSON.parse(stored) : null;
     } catch {
       return null;
@@ -42,9 +51,11 @@ export function AppRouter() {
       localStorage.setItem("active-repo", repoName);
     }
     localStorage.removeItem("active-agent");
+    localStorage.removeItem("active-channel");
     localStorage.setItem("has-context", "true");
     setActiveRepoName(repoName);
     setActiveAgent(null);
+    setActiveChannel(null);
     setHasContext(true);
     // Redirigir a home/chat al cambiar de repositorio
     navigate("/");
@@ -57,9 +68,27 @@ export function AppRouter() {
       localStorage.setItem("active-agent", JSON.stringify(agent));
     }
     localStorage.removeItem("active-repo");
+    localStorage.removeItem("active-channel");
     localStorage.setItem("has-context", "true");
     setActiveAgent(agent);
     setActiveRepoName(null);
+    setActiveChannel(null);
+    setHasContext(true);
+    navigate("/");
+  }, [navigate]);
+
+  const handleSelectChannel = useCallback((channel: { id: string; name: string } | null) => {
+    if (channel === null) {
+      localStorage.removeItem("active-channel");
+    } else {
+      localStorage.setItem("active-channel", JSON.stringify(channel));
+    }
+    localStorage.removeItem("active-repo");
+    localStorage.removeItem("active-agent");
+    localStorage.setItem("has-context", "true");
+    setActiveChannel(channel);
+    setActiveRepoName(null);
+    setActiveAgent(null);
     setHasContext(true);
     navigate("/");
   }, [navigate]);
@@ -87,6 +116,7 @@ export function AppRouter() {
       onNavigate={navigate}
       activeRepoName={activeRepoName}
       activeAgent={activeAgent}
+      activeChannel={activeChannel}
     >
       {route.page === "projects" && (
         <DashboardPage onSelectRepo={handleSelectRepo} />
@@ -101,7 +131,7 @@ export function AppRouter() {
         <AgentsPage onSelectAgent={handleSelectAgent} />
       )}
       {route.page === "channels" && (
-        <ChannelsPage onNavigate={navigate} />
+        <ChannelsPage onNavigate={navigate} onSelectChannel={handleSelectChannel} />
       )}
       {route.page === "channel" && (
         <ChannelDetailPage channelId={route.channelId} onNavigate={navigate} />
@@ -111,9 +141,10 @@ export function AppRouter() {
       )}
       {route.page === "chat" && (
         <ChatArea
-          key={`${route.sessionId}-${activeRepoName}`}
+          key={`${route.sessionId}-${activeRepoName}-${activeAgent?.id}-${activeChannel?.id}`}
           sessionId={route.sessionId}
           activeRepoName={activeRepoName}
+          activeChannel={activeChannel}
         />
       )}
       {route.page === "preview" && (

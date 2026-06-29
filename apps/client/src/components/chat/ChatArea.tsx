@@ -54,9 +54,10 @@ interface Message {
 interface Props {
   sessionId: string | null;
   activeRepoName: string | null;
+  activeChannel?: { id: string; name: string } | null;
 }
 
-export function ChatArea({ sessionId, activeRepoName }: Props) {
+export function ChatArea({ sessionId, activeRepoName, activeChannel }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [streaming, setStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -352,9 +353,17 @@ export function ChatArea({ sessionId, activeRepoName }: Props) {
         const userMsg: Message = { role: "user", content: message };
         setMessages((prev) => [...prev, userMsg]);
         send({ type: "prompt", message, sessionId, tools });
+        if (activeChannel) {
+          const token = localStorage.getItem("token");
+          fetch(`/api/channels/${activeChannel.id}/send`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ message }),
+          }).catch(() => {});
+        }
       }
     },
-    [sessionId, send]
+    [sessionId, send, activeChannel]
   );
 
   const handleAbort = useCallback(() => {

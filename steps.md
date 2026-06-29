@@ -225,3 +225,12 @@
 - [x] 25.3 `apps/client/src/components/channels/ChannelMessages.tsx` — Upgraded UI to support `RichMarkdown` formatting, syntax highlighting, agent badges, and real-time streaming deltas
 - [x] 25.4 `apps/client/src/pages/ChannelDetailPage.tsx` — Enhanced header, active agent counts, and responsive layout
 - [x] 25.5 Verification — TypeScript compilation passes clean (EXIT 0) for server and client
+
+## Phase 26: Unified Channel Sessions & Modal Member Management
+- [x] 26.1 `packages/shared/src/schemas.ts` — Added `channelId?: string` to `CreateSessionSchema` and `SessionSchema`
+- [x] 26.2 `apps/server/src/pi/session-manager.ts` & `routes/sessions.ts` — Supported `channelId` in `getOrCreateSession`, metadata persistence (`/tmp/pi-channels/{channelId}/workspace`), and `POST /api/sessions`
+- [x] 26.3 Client active context state — Updated `AppRouter.tsx`, `MainLayout.tsx`, and `SessionSidebar.tsx` for Channel context mode (`activeChannel`), displaying `Chat [Channel: #channelName]` in header and filtering sessions by channel
+- [x] 26.4 `apps/client/src/pages/ChannelsPage.tsx` — Updated channel cards to switch context to `activeChannel` and redirect to main `ChatArea`
+- [x] 26.5 `apps/client/src/components/channels/ChannelMembersModal.tsx` — Built floating modal for channel member management with explicit agent selection when `targeted` replyMode is chosen
+- [x] 26.6 Integration in `MainLayout.tsx` — Added "Miembros" button in header when in channel mode to trigger `ChannelMembersModal`
+- [x] 26.7 Verification — TypeScript compilation passes clean (EXIT 0) for server and client

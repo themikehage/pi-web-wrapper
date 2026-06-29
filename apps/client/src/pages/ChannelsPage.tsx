@@ -105,9 +105,10 @@ function CreateChannelModal({
 
 interface Props {
   onNavigate: (path: string) => void;
+  onSelectChannel?: (channel: { id: string; name: string }) => void;
 }
 
-export function ChannelsPage({ onNavigate }: Props) {
+export function ChannelsPage({ onNavigate, onSelectChannel }: Props) {
   const { channels, loading, error, fetchChannels, createChannel, deleteChannel } = useChannels();
   const [showCreate, setShowCreate] = useState(false);
 
@@ -183,7 +184,13 @@ export function ChannelsPage({ onNavigate }: Props) {
                 <ChannelCard
                   key={ch.id}
                   channel={ch}
-                  onOpen={(id) => onNavigate(`/channel/${id}`)}
+                  onOpen={(id) => {
+                    if (onSelectChannel) {
+                      onSelectChannel({ id: ch.id, name: ch.name });
+                    } else {
+                      onNavigate(`/channel/${id}`);
+                    }
+                  }}
                   onDelete={deleteChannel}
                 />
               ))}
@@ -198,7 +205,11 @@ export function ChannelsPage({ onNavigate }: Props) {
             onClose={() => setShowCreate(false)}
             onCreate={async (data) => {
               const ch = await createChannel(data);
-              onNavigate(`/channel/${ch.id}`);
+              if (onSelectChannel) {
+                onSelectChannel({ id: ch.id, name: ch.name });
+              } else {
+                onNavigate(`/channel/${ch.id}`);
+              }
             }}
           />
         )}

@@ -29,7 +29,7 @@ sessionsRouter.get("/", async (c) => {
 });
 
 sessionsRouter.post("/", zValidator("json", CreateSessionSchema), async (c) => {
-  const { name, repoName, agentId } = c.req.valid("json");
+  const { name, repoName, agentId, channelId } = c.req.valid("json");
   const { username } = getAuthPayload(c);
   const sessionId = crypto.randomUUID();
 
@@ -42,15 +42,17 @@ sessionsRouter.post("/", zValidator("json", CreateSessionSchema), async (c) => {
     messageCount: 0,
     repoName,
     agentId,
+    channelId,
   };
 
-  await piSessionManager.getOrCreateSession(username, sessionId, repoName, agentId);
+  await piSessionManager.getOrCreateSession(username, sessionId, repoName, agentId, channelId);
   piSessionManager.saveSessionMetadata(username, sessionId, {
     name,
     createdAt: now,
     updatedAt: now,
     repoName: repoName || null,
     agentId: agentId || null,
+    channelId: channelId || null,
   });
 
   return c.json(session, 201);

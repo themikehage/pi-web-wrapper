@@ -2,19 +2,81 @@ import { SessionSidebar } from "@/components/sidebar/SessionSidebar";
 import { useState, useCallback, useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import type { Route } from "@/hooks/useRouter";
+import type { ChannelMember, AgentInfo, AddMember, UpdateMember } from "shared";
+import { ChannelMembersModal } from "@/components/channels/ChannelMembersModal";
 
 interface Props {
   route: Route;
   onNavigate: (path: string) => void;
   activeRepoName: string | null;
   activeAgent: { id: string; name: string } | null;
+  activeChannel: { id: string; name: string } | null;
   children: ReactNode;
 }
 
-export function MainLayout({ route, onNavigate, activeRepoName, activeAgent, children }: Props) {
+export function MainLayout({ route, onNavigate, activeRepoName, activeAgent, activeChannel = null, children }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
+  const [showMembersModal, setShowMembersModal] = useState(false);
+  const [channelMembers, setChannelMembers] = useState<ChannelMember[]>([]);
+  const [registeredAgents, setRegisteredAgents] = useState<AgentInfo[]>([]);
   const pendingWorkspaceFile = useRef<string | null>(null);
+
+  const fetchChannelData = useCallback(async () => {
+    if (!activeChannel) return;
+    const token = localStorage.getItem("token");
+    try {
+      const [chRes, agRes] = await Promise.all([
+        fetch(`/api/channels/${activeChannel.id}`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch("/api/agents", { headers: { Authorization: `Bearer ${token}` } }),
+      ]);
+      if (chRes.ok) {
+        const data = await chRes.json();
+        setChannelMembers(data.channel.members || []);
+      }
+      if (agRes.ok) {
+        const data = await agRes.json();
+        setRegisteredAgents(data.agents || []);
+      }
+    } catch {}
+  }, [activeChannel]);
+
+  useEffect(() => {
+    if (showMembersModal) {
+      fetchChannelData();
+    }
+  }, [showMembersModal, fetchChannelData]);
+
+  const handleAddMember = async (data: AddMember) => {
+    if (!activeChannel) return;
+    const token = localStorage.getItem("token");
+    await fetch(`/api/channels/${activeChannel.id}/members`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify(data),
+    });
+    await fetchChannelData();
+  };
+
+  const handleUpdateMember = async (agentId: string, data: UpdateMember) => {
+    if (!activeChannel) return;
+    const token = localStorage.getItem("token");
+    await fetch(`/api/channels/${activeChannel.id}/members/${agentId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify(data),
+    });
+    await fetchChannelData();
+  };
+
+  const handleRemoveMember = async (agentId: string) => {
+    if (!activeChannel) return;
+    const token = localStorage.getItem("token");
+    await fetch(`/api/channels/${activeChannel.id}/members/${agentId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    await fetchChannelData();
+  };
 
   useEffect(() => {
     const handleOpenWorkspace = (e: Event) => {
@@ -66,7 +128,9 @@ export function MainLayout({ route, onNavigate, activeRepoName, activeAgent, chi
   const sessionId = route.page === "chat" ? route.sessionId : null;
 
   const getPageName = () => {
-    const contextName = activeAgent
+    const contextName = activeChannel
+      ? `Channel: #${activeChannel.name}`
+      : activeAgent
       ? `Agent: ${activeAgent.name}`
       : activeRepoName
       ? `${activeRepoName}`
@@ -89,30 +153,43 @@ export function MainLayout({ route, onNavigate, activeRepoName, activeAgent, chi
       case "channel":
         return "Channel";
       default:
-        return route.sessionId ? `Chat [${contextName}]` : `Pi Web [${contextName}]`;
+        return `Chat [${contextName}]`;
     }
   };
 
   return (
-    <div className="h-dvh flex flex-col bg-bg text-text-primary font-sans">
-      <header className="h-10 sm:h-12 flex items-center justify-between px-3 sm:px-4 border-b border-surface flex-shrink-0">
-        <div className="flex items-center gap-2 sm:gap-3">
-          <div
-            onClick={isChat ? () => setSidebarOpen(!sidebarOpen) : () => onNavigate("/")}
-            className="p-1 text-accent hover:text-accent/80 cursor-pointer transition-colors"
-            title={isChat ? "Toggle Sessions Sidebar" : "Go to Home"}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 17L10 11L4 5" />
-              <path d="M12 19H20" />
-            </svg>
-          </div>
-          <span className="text-text-secondary/30 select-none text-xs sm:text-sm">/</span>
-          <span className="font-display font-bold text-text-primary text-xs sm:text-sm select-none">
+    <div className="h-dvh flex flex-col bg-bg text-text-primary overflow-hidden font-sans">
+      <header className="h-10 sm:h-12 border-b border-surface px-2 sm:px-4 flex items-center justify-between flex-shrink-0 bg-surface/30">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          {isChat && (
+            <button
+              onClick={() => setSidebarOpen((p) => !p)}
+              className="sm:hidden p-1 text-text-secondary hover:text-text-primary rounded"
+              title="Toggle sessions"
+            >
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+              </svg>
+            </button>
+          )}
+          <span className="font-semibold text-xs sm:text-sm text-text-primary flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-accent inline-block" />
             {getPageName()}
           </span>
         </div>
-        <div className="flex items-center gap-2 sm:gap-4">
+        <div className="flex items-center gap-2 sm:gap-3">
+          {activeChannel && (
+            <button
+              onClick={() => setShowMembersModal(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium bg-purple-400/10 text-purple-400 border border-purple-400/30 rounded-lg hover:bg-purple-400/20 transition-colors"
+              title="Gestionar miembros del canal"
+            >
+              <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+              </svg>
+              <span>Miembros</span>
+            </button>
+          )}
           <button
             onClick={() => onNavigate("/projects")}
             className={`p-1 cursor-pointer transition-colors ${
@@ -224,6 +301,7 @@ export function MainLayout({ route, onNavigate, activeRepoName, activeAgent, chi
               activeSessionId={sessionId}
               activeRepoName={activeRepoName}
               activeAgent={activeAgent}
+              activeChannel={activeChannel}
               onSelectSession={handleSelectSession}
               onNewSession={handleNewSession}
             />
@@ -233,6 +311,18 @@ export function MainLayout({ route, onNavigate, activeRepoName, activeAgent, chi
           {children}
         </main>
       </div>
+
+      {showMembersModal && activeChannel && (
+        <ChannelMembersModal
+          channelName={activeChannel.name}
+          members={channelMembers}
+          registeredAgents={registeredAgents}
+          onClose={() => setShowMembersModal(false)}
+          onAddMember={handleAddMember}
+          onUpdateMember={handleUpdateMember}
+          onRemoveMember={handleRemoveMember}
+        />
+      )}
     </div>
   );
 }
