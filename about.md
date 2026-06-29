@@ -109,13 +109,16 @@
 - **Factory Architecture**: Factory function `createAgentServer` producing lightweight Hono servers per agent.
 - **Unified Chat Integration**: Integrated directly into main `ChatArea` as a First-Class Context (`agentId`), providing isolated sessions, custom system prompts, inherited skills, and model selection.
 
-### Multi-Agent Group Channels (`channelId`)
-- **Collaborative Group Spaces**: Multi-agent channels with isolated workspaces at `/tmp/pi-channels/{channelId}/workspace` and append-only message logs.
-- **Sequential Orchestrator**: Multi-agent message dispatcher with loop protection (`MAX_CHAIN_DEPTH = 5`).
-- **Flexible Reply Modes**: `user-only` (responds to human), `broadcast` (triggers all channel agents), and `targeted` (responds only to explicitly selected target agents).
-- **Environmental Context Variables**: Structured key-value context array per channel (`context: ChannelContextItem[]`), dynamically injected into agent prompts during execution to align responses with project environment rules.
-- **Modal Member & Context Management**: Floating `ChannelMembersModal` and `ChannelContextModal` accessible from channel cards and chat headers for managing members, reply modes, and key-value pairs.
-- **Modular ChannelChatArea Architecture**: Dedicated `ChannelChatArea` and `ChannelMessageList` handling multi-agent WS streaming and agent identity badges, while sharing `RichMarkdown` and `InputArea` with standard chat.
+### Multi-Agent Group Channels (`channelId`) & Mention System
+- **Collaborative Group Spaces**: Multi-agent channels with isolated workspaces at `/tmp/pi-channels/{channelId}/workspace` and append-only message logs (`messages.jsonl`).
+- **Session Message Isolation**: Channel message histories and live WebSocket streams strictly isolated per session ID (`sessionId`).
+- **Sequential Orchestrator & Configurable Depth**: Dynamic execution depth control with configurable `maxChainDepth` per channel (default 5, editable up to 20 via UI).
+- **Flexible Reply Modes**: `user-only` (responds to human), `broadcast` (triggers all channel agents), `targeted` (responds to selected peers), and `mention-only` (responds exclusively when explicitly tagged).
+- **@Mention Tagging System**: Real-time `@name` / `@id` / `@user` parsing, interactive autocomplete dropdown in `InputArea`, roster prompt injection, and markdown highlight rendering.
+- **Differentiated Communication Protocol & Anti-Chatter**: Context-aware prompts distinguishing User messages (direct assistance & task delegation) from Peer Agent messages (silent mode `(silent)` when no new work deliverable exists, eliminating courtesy ping loops).
+- **Execution Abort Mechanism**: Instant server-side cancellation (`abortDispatch`) triggered via WS `channel_abort`, REST `/api/channels/:id/abort`, or the UI Stop button.
+- **Environmental Context Variables**: Structured key-value context array per channel (`context: ChannelContextItem[]`), dynamically injected into agent prompts.
+- **Clean Sub-header & Modal Management**: Floating `ChannelMembersModal`, `ChannelContextModal`, and `ChannelSettingsModal` accessible via subtle header icon buttons with numeric counter badges.
 
 ### AutoConsulting Multi-Agent Pi Integration (`autoconsulting`)
 - **WebBuilder Agent**: Autonomous A2A agent powered directly by `@earendil-works/pi-coding-agent` SDK (port 4104).
@@ -161,8 +164,8 @@
 | POST | /api/integrations/templates | Update or define new integrations and custom quick actions |
 | GET | /api/integrations/bindings/:repoName | Get repository linkages for active repository |
 | GET/POST/DELETE | /api/agents | Agent registration, listing, and management |
-| GET/POST/PATCH/DELETE | /api/channels | Channel CRUD, member management (`/members`), context variables (`PUT /:id/context`), and message dispatch (`/send`) |
-| WS | /ws | WebSocket for real-time streaming (events: prompt, steer, follow_up, abort, compact, get_context_usage, channel_send, channel_join) |
+| GET/POST/PATCH/DELETE | /api/channels | Channel CRUD, member management (`/members`), context variables (`PUT /:id/context`), abort execution (`POST /:id/abort`), and message dispatch (`/send`) |
+| WS | /ws | WebSocket for real-time streaming (events: prompt, steer, follow_up, abort, compact, get_context_usage, channel_send, channel_join, channel_abort) |
 | GET | /api/health | Health check |
 
 ## Architecture
