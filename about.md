@@ -104,6 +104,18 @@
 - Repository-specific context variables linked dynamically to resources (GitHub repos, Coolify applications, Neon databases, Vercel projects)
 - Dynamic Quick Action buttons triggering custom workflows with variable replacements sent as chat prompts to the agent
 
+### Programmatic Agents & First-Class Context (`agentId`)
+- **Independent AI Workers**: Programmatic agents with isolated workspaces at `/tmp/pi-agents/{agentId}/workspace` and persistent definitions (`definition.json`).
+- **Factory Architecture**: Factory function `createAgentServer` producing lightweight Hono servers per agent.
+- **Unified Chat Integration**: Integrated directly into main `ChatArea` as a First-Class Context (`agentId`), providing isolated sessions, custom system prompts, inherited skills, and model selection.
+
+### Multi-Agent Group Channels (`channelId`)
+- **Collaborative Group Spaces**: Multi-agent channels with isolated workspaces at `/tmp/pi-channels/{channelId}/workspace` and append-only message logs.
+- **Sequential Orchestrator**: Multi-agent message dispatcher with loop protection (`MAX_CHAIN_DEPTH = 5`).
+- **Flexible Reply Modes**: `user-only` (responds to human), `broadcast` (triggers all channel agents), and `targeted` (responds only to explicitly selected target agents).
+- **Modal Member Management**: Floating `ChannelMembersModal` accessible directly from channel cards to manage members, reply modes, and target selections.
+- **Modular ChannelChatArea Architecture**: Dedicated `ChannelChatArea` and `ChannelMessageList` handling multi-agent WS streaming and agent identity badges, while sharing `RichMarkdown` and `InputArea` with standard chat.
+
 ### AutoConsulting Multi-Agent Pi Integration (`autoconsulting`)
 - **WebBuilder Agent**: Autonomous A2A agent powered directly by `@earendil-works/pi-coding-agent` SDK (port 4104).
 - **Project Workspaces**: Each project maintains its own isolated workspace at `/tmp/ac-projects/{projectId}`.
@@ -147,8 +159,9 @@
 | GET | /api/integrations/templates | List all configured integration templates |
 | POST | /api/integrations/templates | Update or define new integrations and custom quick actions |
 | GET | /api/integrations/bindings/:repoName | Get repository linkages for active repository |
-| POST | /api/integrations/bindings/:repoName | Update repository linkages for active repository |
-| WS | /ws | WebSocket for real-time streaming (events: prompt, steer, follow_up, abort, compact, get_context_usage, context_usage) |
+| GET/POST/DELETE | /api/agents | Agent registration, listing, and management |
+| GET/POST/PATCH/DELETE | /api/channels | Channel CRUD, member management (`/members`), and message dispatch (`/send`) |
+| WS | /ws | WebSocket for real-time streaming (events: prompt, steer, follow_up, abort, compact, get_context_usage, channel_send, channel_join) |
 | GET | /api/health | Health check |
 
 ## Architecture
@@ -171,22 +184,28 @@ packages/shared/  Shared Zod schemas and types
 - `routes/providers.ts` — Dynamic provider configuration API
 - `routes/models.ts` — Model listing from SDK's modelRegistry.getAvailable()
 - `routes/sessions.ts` — Session CRUD, tool permissions, and task runner endpoints
-- `routes/integrations.ts` — REST API for dynamic user-level integration templates and project bindings.
-- `ws/handler.ts` — WebSocket auth via JWT, streaming via session.subscribe()
+- `agents/create-agent-server.ts` — Factory for isolated agent Hono servers. Inherits user authStorage and modelRegistry.
+- `agents/agent-registry.ts` — Singleton managing programmatic agent lifecycle and filesystem persistence.
+- `channels/channel-store.ts` — Filesystem store for channel definitions and message logs.
+- `channels/channel-orchestrator.ts` — Sequential multi-agent message dispatch and recipient resolution.
+- `routes/agents.ts` — REST endpoints for programmatic agent management.
+- `routes/channels.ts` — REST endpoints for channel CRUD and member administration.
+- `ws/handler.ts` — WebSocket auth via JWT, streaming via session.subscribe(), and channel event broadcasting.
 - `middleware/auth.ts` — JWT verification middleware for REST routes
 
 ### Key Client Modules
 - `pages/DashboardPage.tsx` — Initial view: lists repos, creates/clones Git projects, accesses global workspace.
+- `pages/AgentsPage.tsx` — Management dashboard for programmatic agents.
+- `pages/ChannelsPage.tsx` — Management dashboard for multi-agent channels with card actions.
+- `components/channels/ChannelChatArea.tsx` — Dedicated container for channel WS streaming and multi-agent execution.
+- `components/channels/ChannelMessageList.tsx` — Multi-agent message list with agent badges, avatars, and RichMarkdown.
+- `components/channels/ChannelMembersModal.tsx` — Floating modal for member management and targeted agent selection.
 - `hooks/useWebSocket.ts` — WebSocket client with auto-reconnect, event subscription
 - `components/chat/ModelSelector.tsx` — Nested dropdown for provider/model selection
 - `pages/SettingsPage.tsx` — Provider, global env variables, and Integrations Hub template editor.
-- `components/layout/AppRouter.tsx` — Routing logic with repo context state (global vs repo mode). Persists active context in localStorage.
-- `components/layout/ChatLayout.tsx` — Mobile-first layout with collapsible sidebar
-- `components/layout/MainLayout.tsx` — App shell with context-aware header (back to Dashboard button) and scoped SessionSidebar.
-- `components/chat/ChatArea.tsx` — Message list, streaming state, error display, layout structure with side-by-side right drawer.
-- `components/chat/RightDrawer.tsx` — Tabbed panel drawer container hosting Tasks and Infrastructure panels.
-- `components/chat/TasksPanel.tsx` — Checklist component displaying subtasks, logs, and controls.
-- `components/chat/InfrastructurePanel.tsx` — Renders input fields for repository mappings and quick action triggers.
-- `components/sidebar/SessionSidebar.tsx` — Filters sessions by active `repoName`; creates sessions with correct context.
+- `components/layout/AppRouter.tsx` — Context-aware router supporting Repo, Agent, and Channel active modes.
+- `components/layout/MainLayout.tsx` — App shell with context-aware header and scoped SessionSidebar.
+- `components/chat/ChatArea.tsx` — Single-agent/project message list, streaming state, layout structure with side-by-side right drawer.
+- `components/sidebar/SessionSidebar.tsx` — Filters sessions by active context (`repoName`, `agentId`, `channelId`).
 - `components/preview/PreviewPanel.tsx` — Full-page iframe preview with build status, toolbar, and responsive mode toggle
-- `components/workspace/WorkspacePanel.tsx` — File explorer scoped to active repo via `?repo=` query param.
+- `components/workspace/WorkspacePanel.tsx` — File explorer scoped to active workspace.
