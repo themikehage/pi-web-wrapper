@@ -1,5 +1,6 @@
 import { channelStore } from "./channel-store";
 import { agentRegistry } from "../agents";
+import { piSessionManager } from "../pi/session-manager";
 import type { Channel, ChannelMember, ChannelMessage, ReplyMode } from "shared";
 
 type BroadcastFn = (channelId: string, data: any) => void;
@@ -71,6 +72,31 @@ class ChannelOrchestrator {
       }
 
       const agentName = agentEntry.server.definition.name;
+
+      // Ensure model is set on session before prompting
+      if (!agentEntry.server.session.model) {
+        const { modelRegistry } = piSessionManager.getUserContext("admin");
+        modelRegistry.refresh();
+        const available = modelRegistry.getAvailable();
+        if (available.length > 0) {
+          try {
+            await agentEntry.server.session.setModel(available[0]);
+            console.log(`[ChannelOrchestrator] Dynamic model assigned to ${member.agentId}: ${available[0].provider}/${available[0].id}`);
+          } catch (e) {
+            console.error(`[ChannelOrchestrator] Failed to assign model to ${member.agentId}:`, e);
+          }
+        }
+      }
+
+      if (!agentEntry.server.session.model) {
+        broadcast(channelId, {
+          type: "channel_agent_error",
+          channelId,
+          agentId: member.agentId,
+          error: `No LLM providers or models available for agent "${agentName}". Please configure API keys in Settings.`,
+        });
+        continue;
+      }
 
       broadcast(channelId, {
         type: "channel_agent_start",

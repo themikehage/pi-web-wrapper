@@ -218,3 +218,10 @@
 - [x] 24.4 Client active context state — Updated `AppRouter.tsx`, `MainLayout.tsx`, and `SessionSidebar.tsx` for Agent context mode (`activeAgent`), displaying `Chat [Agent: AgentName]` in header and filtering sessions by agent
 - [x] 24.5 `apps/client/src/pages/AgentsPage.tsx` — Replaced simple `ChatModal` with direct context switch & redirection to the full `ChatArea`
 - [x] 24.6 Verification — TypeScript compilation passes clean (EXIT 0) for both server and client
+
+## Phase 25: Channel Agent Fix and Rich UX Upgrade
+- [x] 25.1 `apps/server/src/agents/create-agent-server.ts` — Connected agent creation to user `authStorage` & `modelRegistry` (`piSessionManager.getUserContext("admin")`), providing access to configured API keys
+- [x] 25.2 `apps/server/src/channels/channel-orchestrator.ts` — Added dynamic fallback model verification before prompting agents to prevent null model errors
+- [x] 25.3 `apps/client/src/components/channels/ChannelMessages.tsx` — Upgraded UI to support `RichMarkdown` formatting, syntax highlighting, agent badges, and real-time streaming deltas
+- [x] 25.4 `apps/client/src/pages/ChannelDetailPage.tsx` — Enhanced header, active agent counts, and responsive layout
+- [x] 25.5 Verification — TypeScript compilation passes clean (EXIT 0) for server and client

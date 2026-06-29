@@ -13,6 +13,8 @@ import { streamSSE } from "hono/streaming";
 import type { AgentDefinition } from "shared";
 import type { AgentServer } from "./types";
 
+import { piSessionManager } from "../pi/session-manager";
+
 function ensureAgentWorkspace(id: string): string {
   const dir = `/tmp/pi-agents/${id}`;
   const subdirs = [
@@ -25,15 +27,14 @@ function ensureAgentWorkspace(id: string): string {
   return dir;
 }
 
-export async function createAgentServer(definition: AgentDefinition): Promise<AgentServer> {
+export async function createAgentServer(definition: AgentDefinition, username = "admin"): Promise<AgentServer> {
   const agentDir = ensureAgentWorkspace(definition.id);
   const workspaceDir = join(agentDir, "workspace");
   const sessionDir = join(agentDir, "sessions", "main");
 
   if (!existsSync(sessionDir)) mkdirSync(sessionDir, { recursive: true });
 
-  const authStorage = AuthStorage.create(join(agentDir, "auth.json"));
-  const modelRegistry = ModelRegistry.create(authStorage);
+  const { authStorage, modelRegistry } = piSessionManager.getUserContext(username);
   modelRegistry.refresh();
 
   const additionalSkillPaths: string[] = [];
@@ -84,10 +85,22 @@ export async function createAgentServer(definition: AgentDefinition): Promise<Ag
       (m) => m.id === definition.model || `${m.provider}/${m.id}` === definition.model
     );
     if (found) {
-      try { await session.setModel(found); } catch {}
+      try {
+        await session.setModel(found);
+        console.log(`[AgentServer:${definition.id}] Configured model: ${found.provider}/${found.id}`);
+      } catch (e) {
+        console.error(`[AgentServer:${definition.id}] Failed to set model ${definition.model}:`, e);
+      }
     }
-  } else if (available.length > 0) {
-    try { await session.setModel(available[0]); } catch {}
+  }
+  
+  if (!session.model && available.length > 0) {
+    try {
+      await session.setModel(available[0]);
+      console.log(`[AgentServer:${definition.id}] Fallback default model: ${available[0].provider}/${available[0].id}`);
+    } catch (e) {
+      console.error(`[AgentServer:${definition.id}] Failed to set fallback model:`, e);
+    }
   }
 
   const app = new Hono();
