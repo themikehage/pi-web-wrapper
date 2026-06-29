@@ -117,38 +117,45 @@ export function ChannelChatArea({ activeChannel, sessionId }: Props) {
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <button
             onClick={() => setShowContextModal(true)}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-400/10 text-blue-400 border border-blue-400/20 hover:bg-blue-400/20 transition-colors font-medium"
-            title="Gestionar variables de contexto del canal"
+            className="p-1.5 rounded-lg text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-colors relative"
+            title={`Contexto (${channel?.context?.length ?? 0} variables)`}
           >
-            <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
             </svg>
-            <span>Contexto ({channel?.context?.length ?? 0})</span>
+            {(channel?.context?.length ?? 0) > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-accent text-bg font-bold text-[8px] rounded-full flex items-center justify-center">
+                {channel?.context?.length}
+              </span>
+            )}
           </button>
 
           <button
             onClick={() => setShowMembersModal(true)}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-purple-400/10 text-purple-400 border border-purple-400/20 hover:bg-purple-400/20 transition-colors font-medium"
-            title="Gestionar miembros del canal"
+            className="p-1.5 rounded-lg text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-colors relative"
+            title={`Miembros (${channel?.members?.length ?? 0} agentes)`}
           >
-            <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
               <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
             </svg>
-            <span>Miembros ({channel?.members?.length ?? 0})</span>
+            {(channel?.members?.length ?? 0) > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-surface-hover text-text-primary border border-surface-hover font-bold text-[8px] rounded-full flex items-center justify-center">
+                {channel?.members?.length}
+              </span>
+            )}
           </button>
 
           <button
             onClick={() => setShowSettingsModal(true)}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 transition-colors font-medium"
-            title="Configuración del canal (Límite de profundidad / MAX_CHAIN_DEPTH)"
+            className="p-1.5 rounded-lg text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-colors"
+            title={`Ajustes del canal (MAX_CHAIN_DEPTH: ${channel?.maxChainDepth ?? 5})`}
           >
-            <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
             </svg>
-            <span>Ajustes (Max: {channel?.maxChainDepth ?? 5})</span>
           </button>
         </div>
       </div>
