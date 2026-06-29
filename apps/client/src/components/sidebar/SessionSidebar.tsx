@@ -9,11 +9,13 @@ interface SessionItem {
   messageCount: number;
   status?: SessionStatus;
   repoName?: string;
+  agentId?: string;
 }
 
 interface Props {
   activeSessionId: string | null;
   activeRepoName: string | null;
+  activeAgent: { id: string; name: string } | null;
   onSelectSession: (id: string) => void;
   onNewSession: (id: string) => void;
 }
@@ -25,7 +27,7 @@ const statusConfig: Record<SessionStatus, { color: string; label: string }> = {
   sleeping: { color: "bg-text-secondary/30", label: "Sleeping" },
 };
 
-export function SessionSidebar({ activeSessionId, activeRepoName, onSelectSession, onNewSession }: Props) {
+export function SessionSidebar({ activeSessionId, activeRepoName, activeAgent, onSelectSession, onNewSession }: Props) {
   const [sessions, setSessions] = useState<SessionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -74,10 +76,12 @@ export function SessionSidebar({ activeSessionId, activeRepoName, onSelectSessio
   }, []);
 
   const filteredSessions = useMemo(() => {
-    return sessions.filter((s) =>
-      activeRepoName ? s.repoName === activeRepoName : !s.repoName
-    );
-  }, [sessions, activeRepoName]);
+    return sessions.filter((s) => {
+      if (activeAgent) return s.agentId === activeAgent.id;
+      if (activeRepoName) return s.repoName === activeRepoName && !s.agentId;
+      return !s.repoName && !s.agentId;
+    });
+  }, [sessions, activeRepoName, activeAgent]);
 
   useEffect(() => {
     if (loading || activeSessionId || creating) return;
@@ -94,7 +98,9 @@ export function SessionSidebar({ activeSessionId, activeRepoName, onSelectSessio
     try {
       const token = localStorage.getItem("token");
       const sessionCount = filteredSessions.length;
-      const sessionName = activeRepoName
+      const sessionName = activeAgent
+        ? `${activeAgent.name} - Session ${sessionCount + 1}`
+        : activeRepoName
         ? `${activeRepoName} - Session ${sessionCount + 1}`
         : `Global Session ${sessionCount + 1}`;
 
@@ -106,7 +112,8 @@ export function SessionSidebar({ activeSessionId, activeRepoName, onSelectSessio
         },
         body: JSON.stringify({
           name: sessionName,
-          repoName: activeRepoName || undefined
+          repoName: activeAgent ? undefined : (activeRepoName || undefined),
+          agentId: activeAgent ? activeAgent.id : undefined,
         }),
       });
       if (!res.ok) return;
@@ -117,7 +124,7 @@ export function SessionSidebar({ activeSessionId, activeRepoName, onSelectSessio
     } finally {
       setCreating(false);
     }
-  }, [filteredSessions.length, activeRepoName, onNewSession, sessions]);
+  }, [filteredSessions.length, activeRepoName, activeAgent, onNewSession, sessions]);
 
   const deleteSession = useCallback(
     async (id: string) => {

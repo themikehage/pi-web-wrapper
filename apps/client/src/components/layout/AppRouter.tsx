@@ -17,9 +17,18 @@ export function AppRouter() {
   const { token, user, loading } = useAuth();
   const { route, navigate } = useRouter();
 
-  // Cargar el repo activo y el estado de contexto desde localStorage
+  // Cargar el repo o agente activo y el estado de contexto desde localStorage
   const [activeRepoName, setActiveRepoName] = useState<string | null>(() => {
     return localStorage.getItem("active-repo") || null;
+  });
+
+  const [activeAgent, setActiveAgent] = useState<{ id: string; name: string } | null>(() => {
+    try {
+      const stored = localStorage.getItem("active-agent");
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
   });
 
   const [hasContext, setHasContext] = useState<boolean>(() => {
@@ -32,10 +41,26 @@ export function AppRouter() {
     } else {
       localStorage.setItem("active-repo", repoName);
     }
+    localStorage.removeItem("active-agent");
     localStorage.setItem("has-context", "true");
     setActiveRepoName(repoName);
+    setActiveAgent(null);
     setHasContext(true);
     // Redirigir a home/chat al cambiar de repositorio
+    navigate("/");
+  }, [navigate]);
+
+  const handleSelectAgent = useCallback((agent: { id: string; name: string } | null) => {
+    if (agent === null) {
+      localStorage.removeItem("active-agent");
+    } else {
+      localStorage.setItem("active-agent", JSON.stringify(agent));
+    }
+    localStorage.removeItem("active-repo");
+    localStorage.setItem("has-context", "true");
+    setActiveAgent(agent);
+    setActiveRepoName(null);
+    setHasContext(true);
     navigate("/");
   }, [navigate]);
 
@@ -61,6 +86,7 @@ export function AppRouter() {
       route={route}
       onNavigate={navigate}
       activeRepoName={activeRepoName}
+      activeAgent={activeAgent}
     >
       {route.page === "projects" && (
         <DashboardPage onSelectRepo={handleSelectRepo} />
@@ -72,7 +98,7 @@ export function AppRouter() {
         <SkillsPage />
       )}
       {route.page === "agents" && (
-        <AgentsPage />
+        <AgentsPage onSelectAgent={handleSelectAgent} />
       )}
       {route.page === "channels" && (
         <ChannelsPage onNavigate={navigate} />

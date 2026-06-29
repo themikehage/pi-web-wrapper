@@ -7,10 +7,11 @@ interface Props {
   route: Route;
   onNavigate: (path: string) => void;
   activeRepoName: string | null;
+  activeAgent: { id: string; name: string } | null;
   children: ReactNode;
 }
 
-export function MainLayout({ route, onNavigate, activeRepoName, children }: Props) {
+export function MainLayout({ route, onNavigate, activeRepoName, activeAgent, children }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const pendingWorkspaceFile = useRef<string | null>(null);
@@ -65,7 +66,11 @@ export function MainLayout({ route, onNavigate, activeRepoName, children }: Prop
   const sessionId = route.page === "chat" ? route.sessionId : null;
 
   const getPageName = () => {
-    const contextName = activeRepoName ? `${activeRepoName}` : "Global";
+    const contextName = activeAgent
+      ? `Agent: ${activeAgent.name}`
+      : activeRepoName
+      ? `${activeRepoName}`
+      : "Global";
     switch (route.page) {
       case "projects":
         return "Proyectos";
@@ -218,6 +223,7 @@ export function MainLayout({ route, onNavigate, activeRepoName, children }: Prop
             <SessionSidebar
               activeSessionId={sessionId}
               activeRepoName={activeRepoName}
+              activeAgent={activeAgent}
               onSelectSession={handleSelectSession}
               onNewSession={handleNewSession}
             />

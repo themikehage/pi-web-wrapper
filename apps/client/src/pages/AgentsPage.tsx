@@ -47,7 +47,7 @@ function AgentCard({
 }: {
   agent: AgentInfo;
   onStop: (id: string) => void;
-  onChat: (agent: AgentInfo) => void;
+  onChat: (agent: { id: string; name: string }) => void;
 }) {
   const [stopping, setStopping] = useState(false);
 
@@ -109,11 +109,11 @@ function AgentCard({
 
       <div className="flex items-center gap-2 mt-1">
         <button
-          onClick={() => onChat(agent)}
+          onClick={() => onChat({ id: agent.id, name: agent.name })}
           disabled={agent.status === "stopped" || agent.status === "error"}
           className="flex-1 py-1.5 px-3 text-xs font-medium bg-accent/10 text-accent border border-accent/20 rounded-lg hover:bg-accent/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          Chat
+          Abrir Chat
         </button>
         <button
           onClick={handleStop}
@@ -309,124 +309,15 @@ function RegisterModal({
   );
 }
 
-function ChatModal({
-  agent,
-  onClose,
-  onPrompt,
-}: {
-  agent: AgentInfo;
-  onClose: () => void;
-  onPrompt: (id: string, message: string) => Promise<string>;
-}) {
-  const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
-  const [loading, setLoading] = useState(false);
 
-  const handleSend = async () => {
-    const msg = input.trim();
-    if (!msg || loading) return;
-    setInput("");
-    setMessages((prev) => [...prev, { role: "user", content: msg }]);
-    setLoading(true);
-    try {
-      const reply = await onPrompt(agent.id, msg);
-      setMessages((prev) => [...prev, { role: "assistant", content: reply || "(no response)" }]);
-    } catch (err: any) {
-      setMessages((prev) => [...prev, { role: "assistant", content: `Error: ${err.message}` }]);
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 8 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 8 }}
-        transition={{ duration: 0.18 }}
-        className="relative w-full max-w-xl h-[70vh] bg-surface border border-surface-hover rounded-2xl shadow-2xl flex flex-col overflow-hidden"
-      >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-surface-hover flex-shrink-0">
-          <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${STATUS_DOT[agent.status] ?? "bg-text-secondary"}`} />
-            <span className="text-sm font-semibold text-text-primary">{agent.name}</span>
-            <span className={`text-[10px] px-2 py-0.5 rounded-full border ${roleColor(agent.role)}`}>{agent.role}</span>
-          </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-colors">
-            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-            </svg>
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3 min-h-0">
-          {messages.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-full text-text-secondary text-sm gap-2">
-              <svg width="28" height="28" viewBox="0 0 20 20" fill="currentColor" className="opacity-30">
-                <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z" />
-                <path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z" />
-              </svg>
-              Send a message to start chatting with this agent
-            </div>
-          )}
-          {messages.map((m, i) => (
-            <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-              <div
-                className={`max-w-[80%] px-3 py-2 rounded-xl text-sm whitespace-pre-wrap leading-relaxed ${
-                  m.role === "user"
-                    ? "bg-accent/15 text-text-primary border border-accent/20"
-                    : "bg-bg text-text-primary border border-surface-hover"
-                }`}
-              >
-                {m.content}
-              </div>
-            </div>
-          ))}
-          {loading && (
-            <div className="flex justify-start">
-              <div className="bg-bg border border-surface-hover px-3 py-2 rounded-xl">
-                <div className="flex gap-1 items-center h-4">
-                  {[0, 1, 2].map((i) => (
-                    <span
-                      key={i}
-                      className="w-1.5 h-1.5 rounded-full bg-accent/60 animate-bounce"
-                      style={{ animationDelay: `${i * 0.15}s` }}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="px-4 py-3 border-t border-surface-hover flex-shrink-0 flex gap-2">
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
-            placeholder="Message this agent..."
-            disabled={loading}
-            className="flex-1 bg-bg border border-surface-hover rounded-lg px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary/40 focus:outline-none focus:border-accent/50 disabled:opacity-50"
-          />
-          <button
-            onClick={handleSend}
-            disabled={!input.trim() || loading}
-            className="px-4 py-2 text-sm font-medium bg-accent text-bg rounded-lg hover:bg-accent/90 transition-colors disabled:opacity-40"
-          >
-            Send
-          </button>
-        </div>
-      </motion.div>
-    </div>
-  );
+interface AgentsPageProps {
+  onSelectAgent?: (agent: { id: string; name: string }) => void;
 }
 
-export function AgentsPage() {
-  const { agents, loading, error, fetchAgents, registerAgent, stopAgent, promptAgent } = useAgents();
+export function AgentsPage({ onSelectAgent }: AgentsPageProps) {
+  const { agents, loading, error, fetchAgents, registerAgent, stopAgent } = useAgents();
   const [showRegister, setShowRegister] = useState(false);
-  const [chatAgent, setChatAgent] = useState<AgentInfo | null>(null);
 
   return (
     <div className="h-full flex flex-col bg-bg overflow-hidden">
@@ -503,7 +394,7 @@ export function AgentsPage() {
                   key={agent.id}
                   agent={agent}
                   onStop={stopAgent}
-                  onChat={setChatAgent}
+                  onChat={(agentObj) => onSelectAgent?.(agentObj)}
                 />
               ))}
             </AnimatePresence>
@@ -516,16 +407,6 @@ export function AgentsPage() {
           <RegisterModal
             onClose={() => setShowRegister(false)}
             onRegister={registerAgent}
-          />
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {chatAgent && (
-          <ChatModal
-            agent={chatAgent}
-            onClose={() => setChatAgent(null)}
-            onPrompt={promptAgent}
           />
         )}
       </AnimatePresence>

@@ -19,11 +19,13 @@ export const SessionSchema = z.object({
   messageCount: z.number(),
   status: SessionStatusSchema.optional(),
   repoName: z.string().optional(),
+  agentId: z.string().optional(),
 });
 
 export const CreateSessionSchema = z.object({
   name: z.string().min(1).max(100),
   repoName: z.string().optional(),
+  agentId: z.string().optional(),
 });
 
 export const ModelSettingsSchema = z.object({

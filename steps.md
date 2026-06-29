@@ -210,3 +210,11 @@
 - [x] 23.9 Client UI components — `ChannelsPage.tsx`, `ChannelDetailPage.tsx`, `ChannelCard.tsx`, `ChannelMessages.tsx`, `ChannelInput.tsx`, `MembersPanel.tsx`, `AddMemberModal.tsx`
 - [x] 23.10 Client navigation — added `/channels` and `/channel/:id` routes in `useRouter.ts`, `AppRouter.tsx`, and `#` icon in `MainLayout.tsx`
 - [x] 23.11 Verification — TypeScript compilation passes clean (EXIT 0) for both server and client
+
+## Phase 24: Agent Chat Unification in ChatArea
+- [x] 24.1 `packages/shared/src/schemas.ts` — Added `agentId?: string` to `CreateSessionSchema` and `SessionSchema`
+- [x] 24.2 `apps/server/src/pi/session-manager.ts` — Resolved agent context (`agentId`), workspace directory (`/tmp/pi-agents/{agentId}/workspace`), systemPrompt inheritance, and agent skill loading
+- [x] 24.3 `apps/server/src/routes/sessions.ts` — Supported `agentId` in `POST /api/sessions`
+- [x] 24.4 Client active context state — Updated `AppRouter.tsx`, `MainLayout.tsx`, and `SessionSidebar.tsx` for Agent context mode (`activeAgent`), displaying `Chat [Agent: AgentName]` in header and filtering sessions by agent
+- [x] 24.5 `apps/client/src/pages/AgentsPage.tsx` — Replaced simple `ChatModal` with direct context switch & redirection to the full `ChatArea`
+- [x] 24.6 Verification — TypeScript compilation passes clean (EXIT 0) for both server and client

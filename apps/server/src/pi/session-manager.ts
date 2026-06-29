@@ -12,6 +12,7 @@ import {
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve, dirname } from "node:path";
 import { AVAILABLE_TOOLS } from "shared";
+import { agentRegistry } from "../agents";
 
 export function getResolvedSkillPaths(cwd: string): string[] {
   const paths: string[] = [];
@@ -86,6 +87,7 @@ type SessionListItem = {
   messageCount: number;
   status?: "active" | "streaming" | "task-running" | "sleeping";
   repoName?: string;
+  agentId?: string;
 };
 
 class PiSessionManager {
@@ -156,7 +158,8 @@ class PiSessionManager {
   async getOrCreateSession(
     username: string,
     sessionId: string,
-    repoName?: string
+    repoName?: string,
+    agentId?: string
   ): Promise<AgentSession> {
     const key = this.getSessionKey(username, sessionId);
     const existing = this.sessions.get(key);
@@ -169,20 +172,27 @@ class PiSessionManager {
       mkdirSync(sessionDir, { recursive: true });
     }
 
-    // Persistir metadatos de sesión (guardar y leer metadata.json con repoName)
+    // Persistir metadatos de sesión (guardar y leer metadata.json con repoName y agentId)
     const metadataPath = join(sessionDir, "metadata.json");
     let resolvedRepoName = repoName;
+    let resolvedAgentId = agentId;
     let persistedTools: string[] | undefined;
 
-    if (repoName) {
-      const existing = existsSync(metadataPath)
+    if (repoName || agentId) {
+      const existingMeta = existsSync(metadataPath)
         ? (() => { try { return JSON.parse(readFileSync(metadataPath, "utf-8")); } catch { return {}; } })()
         : {};
-      writeFileSync(metadataPath, JSON.stringify({ ...existing, repoName }, null, 2), "utf-8");
+      const updatedMeta = { ...existingMeta };
+      if (repoName !== undefined) updatedMeta.repoName = repoName;
+      if (agentId !== undefined) updatedMeta.agentId = agentId;
+      writeFileSync(metadataPath, JSON.stringify(updatedMeta, null, 2), "utf-8");
+      resolvedRepoName = updatedMeta.repoName;
+      resolvedAgentId = updatedMeta.agentId;
     } else if (existsSync(metadataPath)) {
       try {
         const metadata = JSON.parse(readFileSync(metadataPath, "utf-8"));
         resolvedRepoName = metadata.repoName;
+        resolvedAgentId = metadata.agentId;
         persistedTools = Array.isArray(metadata.tools) ? metadata.tools : undefined;
       } catch (e) {
         console.error(`Failed to read metadata.json for session ${sessionId}:`, e);
@@ -192,33 +202,54 @@ class PiSessionManager {
     // Asegurar estructura de carpetas
     ensureWorkspaceStructure(username);
 
-    // Asignar cwd dinámicamente
+    // Asignar cwd dinámicamente según el contexto (Repo vs Agent vs Global)
     const workspaceBase = join(userDir, "workspace");
-    const workspaceDir = resolvedRepoName
-      ? resolve(workspaceBase, "repos", resolvedRepoName)
-      : workspaceBase;
+    let workspaceDir = workspaceBase;
+    if (resolvedAgentId) {
+      workspaceDir = `/tmp/pi-agents/${resolvedAgentId}/workspace`;
+    } else if (resolvedRepoName) {
+      workspaceDir = resolve(workspaceBase, "repos", resolvedRepoName);
+    }
 
-    if (resolvedRepoName && !existsSync(workspaceDir)) {
+    if (!existsSync(workspaceDir)) {
       mkdirSync(workspaceDir, { recursive: true });
     }
 
     const { authStorage, modelRegistry } = this.getUserContext(username);
 
+    const agentEntry = resolvedAgentId ? agentRegistry.get(resolvedAgentId) : undefined;
+    const agentDef = agentEntry?.server.definition;
+
     const skillPaths = getResolvedSkillPaths(workspaceDir);
+    if (agentDef?.skills && agentDef.skills.length > 0) {
+      for (const sk of agentDef.skills) {
+        const candidate = resolve(workspaceDir, ".pi", "skills", sk);
+        if (existsSync(candidate) && !skillPaths.includes(candidate)) {
+          skillPaths.push(candidate);
+        }
+      }
+    }
+
+    const appendPrompts = [
+      `\n\nAdditional Instructions for HTML Visual Preview and Image Rendering:\n` +
+      `- When generating web pages, HTML layouts, mockups, or visual documents, always output them as complete HTML files starting with "<!DOCTYPE html>" or "<html>" to enable a live browser-based preview.\n` +
+      `- When generating plots, charts, diagrams, or images, save them to a file and output their file paths or URLs on a separate line using this exact format:\n` +
+      `=== [title] ===\n` +
+      `[file path or URL]\n` +
+      `Example: === output.png ===\n` +
+      `assets/output.png\n` +
+      `This enables the UI to automatically parse and render them in a gallery grid.\n`
+    ];
+
+    if (agentDef?.systemPrompt) {
+      appendPrompts.push(`\n\nAgent Instructions (${agentDef.name} - ${agentDef.role}):\n${agentDef.systemPrompt}`);
+    }
+
     const resourceLoader = new DefaultResourceLoader({
       cwd: workspaceDir,
       agentDir: userDir,
       additionalSkillPaths: skillPaths,
-      appendSystemPrompt: [
-        `\n\nAdditional Instructions for HTML Visual Preview and Image Rendering:\n` +
-        `- When generating web pages, HTML layouts, mockups, or visual documents, always output them as complete HTML files starting with "<!DOCTYPE html>" or "<html>" to enable a live browser-based preview.\n` +
-        `- When generating plots, charts, diagrams, or images, save them to a file and output their file paths or URLs on a separate line using this exact format:\n` +
-        `=== [title] ===\n` +
-        `[file path or URL]\n` +
-        `Example: === output.png ===\n` +
-        `assets/output.png\n` +
-        `This enables the UI to automatically parse and render them in a gallery grid.\n`
-      ]
+      appendSystemPrompt: appendPrompts,
     });
     await resourceLoader.reload();
 
@@ -405,6 +436,7 @@ class PiSessionManager {
         messageCount,
         status,
         repoName: metadata.repoName as string | undefined,
+        agentId: metadata.agentId as string | undefined,
       });
     }
 
