@@ -325,14 +325,25 @@ class ChannelOrchestrator {
         const name = agentNameMap.get(m.agentId) || m.agentId;
         lines.push(`- @${name}  (id: ${m.agentId})`);
       }
+      let rulesBlock = "";
+      if (incomingMsg.role === "user") {
+        rulesBlock =
+          `COMMUNICATION PROTOCOL (USER MESSAGE):\n` +
+          `1. DIRECT ASSISTANCE: You are responding to the user. Answer clearly, professionally, and helpfully to address their request or guide them.\n` +
+          `2. TASK DELEGATION: If your response requires delegation, review, or input from a specific teammate (e.g. @Tech Lead, @Senior Dev), formulate your task or scope and explicitly tag them in your message.\n\n`;
+      } else {
+        rulesBlock =
+          `COMMUNICATION PROTOCOL (PEER AGENT MESSAGE):\n` +
+          `1. NO COURTESY CHATTER: You are receiving a message from peer agent "${incomingMsg.agentName || incomingMsg.agentId}". Do NOT reply merely to say hello, acknowledge receipt, or state that you are "present" or "on standby".\n` +
+          `2. SILENT MODE: If this peer message does not require your specific technical decision, deliverable, or direct action, reply EXACTLY with "(silent)".\n` +
+          `3. TASK DELEGATION: Mention other team members using @name or @id ONLY when transferring an explicit task or work deliverable.\n\n`;
+      }
+
       rosterBlock =
         `Channel Participants & Tagging Protocol:\n` +
         `The following participants are in this channel. Explicitly mentioning them using @name or @id in your message will trigger them to respond:\n` +
         `${lines.join("\n")}\n\n` +
-        `COMMUNICATION PROTOCOL & TASK ROUTING:\n` +
-        `1. FOCUS ON VALUE & ACTION: Respond meaningfully to advance the project (e.g. analyzing user requests, generating scope proposals, conducting technical reviews, drafting commercial quotes). Do NOT reply merely to say hello, acknowledge attendance, or state that you are "present" or "on standby". If you genuinely have no input or action to contribute at this step, reply with "(silent)".\n` +
-        `2. TASK DELEGATION: Mention other team members using @name or @id ONLY when transferring an explicit task, delivering a required work artifact, or asking a direct blocking technical question.\n` +
-        `3. NO REPETITIVE CHATTER: Do not loop or repeat questions already answered or asked in the conversation history.\n\n`;
+        rulesBlock;
     }
 
     let historyText = "";
